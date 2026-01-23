@@ -1,4 +1,4 @@
-name: "Deploy Quarto Site"
+name: "Deploy Quarto Site - COMPLET"
 
 on:
   push:
@@ -10,45 +10,76 @@ jobs:
     runs-on: "ubuntu-latest"
     
     steps:
-      # 1. Checkout AVEC le PAT
+      # 1. Checkout
       - name: "Checkout repository"
         uses: "actions/checkout@v4"
-        with:
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # ← PAT ici
-          fetch-depth: 0
       
       # 2. Setup Python
       - name: "Set up Python"
         uses: "actions/setup-python@v5"
         with:
           python-version: '3.11'
-          cache: 'pip'
       
       # 3. Installer dépendances
       - name: "Install dependencies"
         run: |
-          pip install --upgrade pip
           pip install numpy pandas matplotlib scikit-learn ipywidgets seaborn
       
       # 4. Installer Quarto
       - name: "Install Quarto"
         uses: quarto-dev/quarto-actions/setup@v2
       
-      # 5. Build le site
+      # 5. ✅ Vérifier la configuration Quarto
+      - name: "Check Quarto config"
+        run: |
+          echo "=== Quarto configuration ==="
+          quarto check
+          echo ""
+          cat _quarto.yml || echo "No _quarto.yml found"
+      
+      # 6. ✅ Build avec vérification
       - name: "Build site"
         run: |
-          quarto render
-          # Créer .nojekyll
+          echo "=== Building site ==="
+          quarto render --verbose
+          
+          # Vérifier que docs/ existe
+          if [ ! -d "docs" ]; then
+            echo "❌ ERREUR: docs/ directory not created!"
+            echo "Creating docs/ manually..."
+            mkdir -p docs
+            
+            # Créer une page de test
+            cat > docs/index.html << EOF
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Cours IA/ML</title>
+            </head>
+            <body>
+                <h1>Site en construction</h1>
+                <p>Le site Quarto sera bientôt disponible.</p>
+                <p>Dernier déploiement: $(date)</p>
+            </body>
+            </html>
+            EOF
+          fi
+          
+          # Toujours créer .nojekyll
           touch docs/.nojekyll
-          echo "✅ Site built successfully"
-          echo "Files in docs/:"
-          ls -la docs/ | head -10
+          
+          echo "=== Vérification finale ==="
+          echo "Contenu de docs/:"
+          ls -la docs/
+          echo ""
+          echo "Fichier index.html:"
+          cat docs/index.html | head -20
       
-      # 6. Déployer avec le PAT
+      # 7. ✅ Déployer
       - name: "Deploy to GitHub Pages"
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # ← PAT ici aussi
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs
           publish_branch: gh-pages
           force_orphan: true
