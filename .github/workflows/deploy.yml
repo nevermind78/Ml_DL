@@ -1,4 +1,4 @@
-name: "Create and Deploy gh-pages"
+name: "Deploy Quarto - No Jekyll"
 
 on:
   push:
@@ -6,79 +6,73 @@ on:
   workflow_dispatch:
 
 jobs:
-  create-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       # 1. Checkout
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Important
       
       # 2. Setup Quarto
       - uses: quarto-dev/quarto-actions/setup@v2
       
-      # 3. Build Quarto si possible
-      - name: Try to build Quarto
-        run: |
-          if [ -f "index.qmd" ] || [ -f "_quarto.yml" ]; then
-            echo "📦 Building Quarto site..."
-            quarto render 2>/dev/null || echo "Quarto render failed, continuing..."
-          else
-            echo "📄 No Quarto files found, creating basic site..."
-          fi
+      # 3. Install dependencies
+      - name: Install Python packages
+        run: pip install numpy pandas matplotlib scikit-learn ipywidgets
       
-      # 4. Créer le site (soit Quarto, soit basique)
-      - name: Create website
+      # 4. Créer un site statique SIMPLE
+      - name: Create static site
         run: |
-          # S'assurer que docs/ existe
+          # Créer le dossier docs
           mkdir -p docs
           
-          # Si Quarto a généré quelque chose, l'utiliser
-          if [ -f "docs/index.html" ]; then
-            echo "✅ Using Quarto-generated site"
-          else
-            # Sinon créer un site basique
-            echo "🛠️ Creating basic site..."
-            cat > docs/index.html << 'EOF'
+          # Créer un site HTML minimal
+          cat > docs/index.html << 'EOF'
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cours IA/ML - nevermind78</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
     <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --light: #ecf0f1;
-        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            color: white;
         }
         .container {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
             max-width: 800px;
             width: 100%;
-            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             text-align: center;
+            color: #333;
         }
         h1 {
-            color: var(--primary);
+            color: #2c3e50;
             margin-bottom: 20px;
             font-size: 2.5em;
         }
-        .status {
+        .emoji { font-size: 3em; margin-bottom: 20px; }
+        .url {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            word-break: break-all;
+        }
+        .success {
             background: #d4edda;
             color: #155724;
             padding: 15px;
@@ -86,94 +80,79 @@ jobs:
             margin: 20px 0;
             font-weight: bold;
         }
-        .url-box {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-family: monospace;
-            font-size: 1.1em;
-            word-break: break-all;
-        }
         .btn {
             display: inline-block;
-            background: var(--secondary);
+            background: #3498db;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
             border-radius: 50px;
             font-weight: bold;
-            margin-top: 20px;
-            transition: transform 0.3s;
+            margin: 10px;
+            transition: all 0.3s;
         }
         .btn:hover {
-            transform: translateY(-3px);
+            background: #2980b9;
+            transform: translateY(-2px);
         }
         .info {
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid #dee2e6;
             color: #666;
+            font-size: 0.9em;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎓 Cours IA/ML</h1>
-        <div class="status">
+        <div class="emoji">🎯</div>
+        <h1>Cours IA/ML</h1>
+        
+        <div class="success">
             ✅ Site déployé avec succès !
         </div>
         
         <p>Bienvenue sur le site du cours d'Intelligence Artificielle et Machine Learning.</p>
         
-        <div class="url-box">
+        <div class="url">
             https://nevermind78.github.io/Ml_DL/
         </div>
         
-        <p>Cette page a été automatiquement générée car la branche <code>gh-pages</code> n'existait pas.</p>
-        
-        <a href="https://github.com/nevermind78/Ml_DL" class="btn">
-            📂 Voir le code source
-        </a>
+        <div>
+            <a href="https://github.com/nevermind78/Ml_DL" class="btn" target="_blank">
+                📂 Code source
+            </a>
+            <a href="https://github.com/nevermind78" class="btn" target="_blank" style="background: #2c3e50;">
+                👤 Profil GitHub
+            </a>
+        </div>
         
         <div class="info">
-            <p><strong>Déployé le:</strong> $(date)</p>
-            <p><strong>Dernier commit:</strong> ${{ github.sha }}</p>
-            <p><strong>Workflow:</strong> ${{ github.workflow }}</p>
+            <p><strong>Déploiement:</strong> Site statique HTML (pas Jekyll)</p>
+            <p><strong>Date:</strong> $(date)</p>
+            <p><strong>Statut:</strong> gh-pages branch créée</p>
         </div>
     </div>
 </body>
 </html>
 EOF
-          fi
           
-          # Toujours créer .nojekyll
+          # Créer un fichier .nojekyll AVANT de copier
           touch docs/.nojekyll
           
-          echo "📁 Contenu de docs/:"
+          # Créer un fichier CNAME si nécessaire
+          # echo "nevermind78.github.io" > docs/CNAME
+          
+          echo "📁 Contenu créé dans docs/:"
           ls -la docs/
       
-      # 5. Configurer Git pour le déploiement
-      - name: Setup Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
-      # 6. Créer et pousser vers gh-pages
-      - name: Create and push gh-pages
-        run: |
-          # Créer un répertoire temporaire
-          mkdir /tmp/gh-pages
-          cp -r docs/* /tmp/gh-pages/
-          cd /tmp/gh-pages
-          
-          # Initialiser git
-          git init
-          git add .
-          git commit -m "🎉 Initial deployment - $(date)"
-          
-          # Pousser vers gh-pages
-          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          git push origin main:gh-pages --force
-          
-          echo "✅ gh-pages branch created successfully!"
+      # 5. Déployer avec action qui fonctionne
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: docs
+          clean: true
+          single-commit: true
