@@ -6,7 +6,7 @@ project:
 
 book:
   title: "Machine Learning et Deep Learning"
-  subtitle: "2eme annee - Genie Informatique - S2"
+  subtitle: "4ème annee - Genie Informatique - S2"
   author: "Abdallah Khemais"
   date: today
   date-format: "DD/MM/YYYY"
