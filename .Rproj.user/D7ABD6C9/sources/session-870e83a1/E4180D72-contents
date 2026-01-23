@@ -1,6 +1,6 @@
 project:
   type: book
-  output-dir: _book
+  output-dir: docs  # Important: doit correspondre à publish_dir dans le workflow
 
 book:
   title: "Machine Learning et Deep Learning"
@@ -36,8 +36,6 @@ format:
     number-sections: false
     highlight-style: github
     
-  
-
 execute:
   echo: false
   warning: false
