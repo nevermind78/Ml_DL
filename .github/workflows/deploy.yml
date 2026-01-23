@@ -1,4 +1,4 @@
-name: "Deploy Quarto Site"
+name: "Deploy Quarto Book"
 
 on:
   push:
@@ -13,66 +13,32 @@ jobs:
       contents: write
     
     steps:
-      # 1. Checkout
       - uses: "actions/checkout@v4"
       
-      # 2. Install Quarto
       - name: "Install Quarto"
         run: |
           wget -q https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.553/quarto-1.4.553-linux-amd64.deb
           sudo dpkg -i quarto-1.4.553-linux-amd64.deb
       
-      # 3. Install Python dependencies (si nécessaire pour vos notebooks)
       - name: "Install Python packages"
         run: pip install numpy pandas matplotlib scikit-learn ipywidgets
       
-      # 4. Optionnel : Vérifier la structure du projet
-      - name: "List project structure"
-        run: |
-          echo "📁 Structure du projet :"
-          ls -la
-          echo ""
-          echo "📁 Fichiers Quarto :"
-          find . -name "*.qmd" -o -name "_quarto.yml" -o -name "_quarto.yaml" | head -20
+      - name: "Render Quarto book"
+        run: quarto render
       
-      # 5. Build Quarto site
-      - name: "Build Quarto site"
+      - name: "Verify generated site"
         run: |
-          # Créer le fichier de configuration Quarto s'il n'existe pas
-          if [ ! -f "_quarto.yml" ] && [ ! -f "_quarto.yaml" ]; then
-            echo "Création d'une configuration Quarto basique..."
-            cat > _quarto.yml << 'EOF'
-project:
-  type: website
-  output-dir: _site
-  
-website:
-  title: "Cours IA/ML - nevermind78"
-  navbar:
-    background: "primary"
-    search: true
-  page-navigation: true
-
-format:
-  html:
-    theme: cosmo
-    toc: true
-    css: styles.css
-EOF
-          fi
-          
-          # Rendre le site
-          quarto render
-          
-          # Vérifier le contenu généré
-          echo "📁 Contenu généré dans _site/:"
+          echo "📁 Fichiers générés dans _site/:"
           ls -la _site/
+          echo -e "\n📄 Contenu de index.html (premières lignes):"
+          head -30 _site/index.html
       
-      # 6. Déployer avec l'action qui fonctionne
-      - name: "Deploy"
+      - name: "Deploy to GitHub Pages"
         uses: "peaceiris/actions-gh-pages@v3"
         with:
           github_token: "${{ secrets.GITHUB_TOKEN }}"
           publish_dir: "./_site"
-          force_orphan: true  # Cette option crée la branche si elle n'existe pas
+          force_orphan: true
           keep_files: false
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
