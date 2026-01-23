@@ -3,36 +3,58 @@ name: "Deploy Quarto Site"
 on:
   push:
     branches: ["main"]
-  workflow_dispatch:  # Permet le déclenchement manuel
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: "ubuntu-latest"
+    
     steps:
-      - uses: "actions/checkout@v4"
+      # Étape 1: Checkout avec token explicite
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # IMPORTANT
       
+      # Étape 2: Setup Python
       - name: "Set up Python"
-        uses: "actions/setup-python@v5"
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
       
+      # Étape 3: Installer les dépendances Python
       - name: "Install Python dependencies"
         run: |
           pip install --upgrade pip
           pip install jupyter numpy pandas matplotlib scikit-learn ipywidgets seaborn scipy plotly
       
+      # Étape 4: Installer Quarto
       - name: "Install Quarto"
-        run: |
-          wget -q https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.553/quarto-1.4.553-linux-amd64.deb
-          sudo dpkg -i quarto-1.4.553-linux-amd64.deb
+        uses: quarto-dev/quarto-actions/setup@v2
       
+      # Étape 5: Build le site
       - name: "Build site"
-        run: "quarto render"
+        run: |
+          quarto render
+          # S'assurer que docs/ existe et contient .nojekyll
+          if [ ! -d "docs" ]; then
+            echo "ERROR: docs/ directory not found!"
+            exit 1
+          fi
+          touch docs/.nojekyll
+          ls -la docs/ | head -20
       
-      - name: "Deploy"
-        uses: "peaceiris/actions-gh-pages@v3"
+      # Étape 6: Déployer AVEC la bonne configuration
+      - name: "Deploy to GitHub Pages"
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
-          publish_dir: "./docs"  # Changé de _site à docs
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
           force_orphan: true
+          user_name: "github-actions[bot]"
+          user_email: "github-actions[bot]@users.noreply.github.com"
+          keep_files: false
+          allow_empty_commit: true
