@@ -152,7 +152,7 @@ EOF
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
+          branch: main
           folder: docs
           clean: true
           single-commit: true
