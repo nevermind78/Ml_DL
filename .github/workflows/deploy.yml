@@ -1,185 +1,78 @@
-name: "Deploy Quarto - No Jekyll"
+name: "Deploy Quarto Site"
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   workflow_dispatch:
-
-permissions:
-  contents: write
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
+    
+    permissions:
+      contents: write
+    
     steps:
       # 1. Checkout
-      - uses: actions/checkout@v4
+      - uses: "actions/checkout@v4"
       
-      # 2. Setup Quarto
-      - uses: quarto-dev/quarto-actions/setup@v2
+      # 2. Install Quarto
+      - name: "Install Quarto"
+        run: |
+          wget -q https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.553/quarto-1.4.553-linux-amd64.deb
+          sudo dpkg -i quarto-1.4.553-linux-amd64.deb
       
-      # 3. Install dependencies
-      - name: Install Python packages
+      # 3. Install Python dependencies (si nécessaire pour vos notebooks)
+      - name: "Install Python packages"
         run: pip install numpy pandas matplotlib scikit-learn ipywidgets
       
-      # 4. Créer un site statique SIMPLE
-      - name: Create static site
+      # 4. Optionnel : Vérifier la structure du projet
+      - name: "List project structure"
         run: |
-          # Créer le dossier docs
-          mkdir -p docs
-          
-          # Créer un site HTML minimal
-          cat > docs/index.html << 'EOF'
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cours IA/ML - nevermind78</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: white;
-        }
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 800px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            text-align: center;
-            color: #333;
-        }
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 2.5em;
-        }
-        .emoji { font-size: 3em; margin-bottom: 20px; }
-        .url {
-            background: #f8f9fa;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 20px 0;
-            font-family: 'Courier New', monospace;
-            font-size: 1.2em;
-            word-break: break-all;
-        }
-        .success {
-            background: #d4edda;
-            color: #155724;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            font-weight: bold;
-        }
-        .btn {
-            display: inline-block;
-            background: #3498db;
-            color: white;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            margin: 10px;
-            transition: all 0.3s;
-        }
-        .btn:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-        }
-        .info {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #dee2e6;
-            color: #666;
-            font-size: 0.9em;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="emoji">🎯</div>
-        <h1>Cours IA/ML</h1>
-        
-        <div class="success">
-            ✅ Site déployé avec succès !
-        </div>
-        
-        <p>Bienvenue sur le site du cours d'Intelligence Artificielle et Machine Learning.</p>
-        
-        <div class="url">
-            https://nevermind78.github.io/Ml_DL/
-        </div>
-        
-        <div>
-            <a href="https://github.com/nevermind78/Ml_DL" class="btn" target="_blank">
-                📂 Code source
-            </a>
-            <a href="https://github.com/nevermind78" class="btn" target="_blank" style="background: #2c3e50;">
-                👤 Profil GitHub
-            </a>
-        </div>
-        
-        <div class="info">
-            <p><strong>Déploiement:</strong> Site statique HTML (pas Jekyll)</p>
-            <p><strong>Date:</strong> $(date)</p>
-            <p><strong>Statut:</strong> gh-pages branch créée</p>
-        </div>
-    </div>
-</body>
-</html>
+          echo "📁 Structure du projet :"
+          ls -la
+          echo ""
+          echo "📁 Fichiers Quarto :"
+          find . -name "*.qmd" -o -name "_quarto.yml" -o -name "_quarto.yaml" | head -20
+      
+      # 5. Build Quarto site
+      - name: "Build Quarto site"
+        run: |
+          # Créer le fichier de configuration Quarto s'il n'existe pas
+          if [ ! -f "_quarto.yml" ] && [ ! -f "_quarto.yaml" ]; then
+            echo "Création d'une configuration Quarto basique..."
+            cat > _quarto.yml << 'EOF'
+project:
+  type: website
+  output-dir: _site
+  
+website:
+  title: "Cours IA/ML - nevermind78"
+  navbar:
+    background: "primary"
+    search: true
+  page-navigation: true
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    css: styles.css
 EOF
-          
-          # Créer un fichier .nojekyll
-          touch docs/.nojekyll
-          
-          echo "📁 Contenu créé dans docs/:"
-          ls -la docs/
-      
-      # 5. Vérifier si la branche gh-pages existe
-      - name: Check if gh-pages exists
-        id: check-branch
-        run: |
-          if git ls-remote --exit-code --heads origin gh-pages; then
-            echo "Branch gh-pages exists"
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "Branch gh-pages does not exist"
-            echo "exists=false" >> $GITHUB_OUTPUT
           fi
+          
+          # Rendre le site
+          quarto render
+          
+          # Vérifier le contenu généré
+          echo "📁 Contenu généré dans _site/:"
+          ls -la _site/
       
-      # 6. Créer la branche gh-pages si elle n'existe pas
-      - name: Create gh-pages branch if needed
-        if: steps.check-branch.outputs.exists == 'false'
-        run: |
-          # Créer une branche orpheline et pousser
-          git checkout --orphan gh-pages
-          git rm -rf .
-          echo "Initial gh-pages" > index.html
-          git add index.html
-          git commit -m "Initial gh-pages branch"
-          git push origin gh-pages
-          git checkout main
-      
-      # 7. Déployer
-      - name: Deploy to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4
+      # 6. Déployer avec l'action qui fonctionne
+      - name: "Deploy"
+        uses: "peaceiris/actions-gh-pages@v3"
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
-          folder: docs
-          clean: true
-          single-commit: true
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          publish_dir: "./_site"
+          force_orphan: true  # Cette option crée la branche si elle n'existe pas
+          keep_files: false
