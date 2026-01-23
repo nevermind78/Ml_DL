@@ -7,7 +7,7 @@
 
 - **Intitulé**: Machine Learning et Deep Learning
 - **Département**: Génie Informatique
-- **Niveau**: 2ème année
+- **Niveau**: 4ème année DS
 - **Semestre**: S2
 - **Régime**: Mixte
 - **Volume Horaire Total**: 42h
