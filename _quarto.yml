@@ -1,6 +1,9 @@
 project:
   type: book
-  output-dir: _site  # Important: doit correspondre à publish_dir dans le workflow
+  output-dir: _site
+  site-url: "https://nevermind78.github.io/Ml_DL/"  # ← AJOUTER
+  repo-url: "https://github.com/nevermind78/Ml_DL"   # ← AJOUTER
+  repo-actions: [edit, issue]                        # ← Optionnel : boutons GitHub
 
 book:
   title: "Machine Learning et Deep Learning"
