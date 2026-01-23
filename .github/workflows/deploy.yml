@@ -6,39 +6,42 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: "ubuntu-latest"
+  build-and-deploy:
+    runs-on: ubuntu-latest
     
     permissions:
       contents: write
     
     steps:
-      - uses: "actions/checkout@v4"
+      - name: Checkout repository
+        uses: actions/checkout@v4
       
-      - name: "Install Quarto"
-        run: |
-          wget -q https://github.com/quarto-dev/quarto-cli/releases/download/v1.4.553/quarto-1.4.553-linux-amd64.deb
-          sudo dpkg -i quarto-1.4.553-linux-amd64.deb
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
       
-      - name: "Install Python packages"
+      - name: Install Python dependencies
         run: pip install numpy pandas matplotlib scikit-learn ipywidgets
       
-      - name: "Render Quarto book"
-        run: quarto render
-      
-      - name: "Verify generated site"
+      - name: Clean previous builds
         run: |
-          echo "📁 Fichiers générés dans _site/:"
-          ls -la _site/
-          echo -e "\n📄 Contenu de index.html (premières lignes):"
-          head -30 _site/index.html
+          rm -rf _site _book docs
+          echo "🧹 Anciennes builds supprimées"
       
-      - name: "Deploy to GitHub Pages"
-        uses: "peaceiris/actions-gh-pages@v3"
+      - name: Render Quarto book
+        run: |
+          echo "📚 Rendu du livre Quarto..."
+          quarto render
+          echo "✅ Rendu terminé"
+          
+          # Vérification
+          echo "📁 Contenu généré:"
+          ls -la _site/
+      
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
-          publish_dir: "./_site"
-          force_orphan: true
-          keep_files: false
-          user_name: 'github-actions[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
+          branch: gh-pages
+          folder: _site
+          clean: true
+          single-commit: true
+          silent: true
