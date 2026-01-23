@@ -1,9 +1,8 @@
 project:
   type: book
   output-dir: _site
-  site-url: "https://nevermind78.github.io/Ml_DL/"  # ← AJOUTER
-  repo-url: "https://github.com/nevermind78/Ml_DL"   # ← AJOUTER
-  repo-actions: [edit, issue]                        # ← Optionnel : boutons GitHub
+
+               # ← Optionnel : boutons GitHub
 
 book:
   title: "Machine Learning et Deep Learning"
@@ -11,7 +10,8 @@ book:
   author: "Abdallah Khemais"
   date: today
   date-format: "DD/MM/YYYY"
-  
+  site-url: "https://nevermind78.github.io/Ml_DL/"  # ← AJOUTER
+  repo-url: "https://github.com/nevermind78/Ml_DL"   # ← AJOUTER
   chapters:
     - index.qmd
     - part: "Partie 1: Machine Learning Fondamental"
