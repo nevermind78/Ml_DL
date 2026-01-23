@@ -6,12 +6,12 @@ project:
 
 book:
   title: "Machine Learning et Deep Learning"
-  subtitle: "4ème annee - Genie Informatique - S2"
+  subtitle: "4ème annee - Data Science - S2"
   author: "Abdallah Khemais"
   date: today
   date-format: "DD/MM/YYYY"
-  site-url: "https://nevermind78.github.io/Ml_DL/"  # ← AJOUTER
-  repo-url: "https://github.com/nevermind78/Ml_DL"   # ← AJOUTER
+  site-url: "https://nevermind78.github.io/Ml_DL/" 
+  repo-url: "https://github.com/nevermind78/Ml_DL"   
   chapters:
     - index.qmd
     - part: "Partie 1: Machine Learning Fondamental"
