@@ -5,6 +5,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -138,21 +143,43 @@ jobs:
 </html>
 EOF
           
-          # Créer un fichier .nojekyll AVANT de copier
+          # Créer un fichier .nojekyll
           touch docs/.nojekyll
-          
-          # Créer un fichier CNAME si nécessaire
-          # echo "nevermind78.github.io" > docs/CNAME
           
           echo "📁 Contenu créé dans docs/:"
           ls -la docs/
       
-      # 5. Déployer avec action qui fonctionne
+      # 5. Vérifier si la branche gh-pages existe
+      - name: Check if gh-pages exists
+        id: check-branch
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages; then
+            echo "Branch gh-pages exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Branch gh-pages does not exist"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+      
+      # 6. Créer la branche gh-pages si elle n'existe pas
+      - name: Create gh-pages branch if needed
+        if: steps.check-branch.outputs.exists == 'false'
+        run: |
+          # Créer une branche orpheline et pousser
+          git checkout --orphan gh-pages
+          git rm -rf .
+          echo "Initial gh-pages" > index.html
+          git add index.html
+          git commit -m "Initial gh-pages branch"
+          git push origin gh-pages
+          git checkout main
+      
+      # 7. Déployer
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          branch: gh-pages
           folder: docs
           clean: true
           single-commit: true
