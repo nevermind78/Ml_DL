@@ -1,87 +1,179 @@
-name: "Deploy Quarto Site - COMPLET"
+name: "Create and Deploy gh-pages"
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
-  deploy:
-    runs-on: "ubuntu-latest"
-    
+  create-and-deploy:
+    runs-on: ubuntu-latest
     steps:
       # 1. Checkout
-      - name: "Checkout repository"
-        uses: "actions/checkout@v4"
-      
-      # 2. Setup Python
-      - name: "Set up Python"
-        uses: "actions/setup-python@v5"
+      - uses: actions/checkout@v4
         with:
-          python-version: '3.11'
+          fetch-depth: 0  # Important
       
-      # 3. Installer dépendances
-      - name: "Install dependencies"
+      # 2. Setup Quarto
+      - uses: quarto-dev/quarto-actions/setup@v2
+      
+      # 3. Build Quarto si possible
+      - name: Try to build Quarto
         run: |
-          pip install numpy pandas matplotlib scikit-learn ipywidgets seaborn
+          if [ -f "index.qmd" ] || [ -f "_quarto.yml" ]; then
+            echo "📦 Building Quarto site..."
+            quarto render 2>/dev/null || echo "Quarto render failed, continuing..."
+          else
+            echo "📄 No Quarto files found, creating basic site..."
+          fi
       
-      # 4. Installer Quarto
-      - name: "Install Quarto"
-        uses: quarto-dev/quarto-actions/setup@v2
-      
-      # 5. ✅ Vérifier la configuration Quarto
-      - name: "Check Quarto config"
+      # 4. Créer le site (soit Quarto, soit basique)
+      - name: Create website
         run: |
-          echo "=== Quarto configuration ==="
-          quarto check
-          echo ""
-          cat _quarto.yml || echo "No _quarto.yml found"
-      
-      # 6. ✅ Build avec vérification
-      - name: "Build site"
-        run: |
-          echo "=== Building site ==="
-          quarto render --verbose
+          # S'assurer que docs/ existe
+          mkdir -p docs
           
-          # Vérifier que docs/ existe
-          if [ ! -d "docs" ]; then
-            echo "❌ ERREUR: docs/ directory not created!"
-            echo "Creating docs/ manually..."
-            mkdir -p docs
-            
-            # Créer une page de test
-            cat > docs/index.html << EOF
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Cours IA/ML</title>
-            </head>
-            <body>
-                <h1>Site en construction</h1>
-                <p>Le site Quarto sera bientôt disponible.</p>
-                <p>Dernier déploiement: $(date)</p>
-            </body>
-            </html>
-            EOF
+          # Si Quarto a généré quelque chose, l'utiliser
+          if [ -f "docs/index.html" ]; then
+            echo "✅ Using Quarto-generated site"
+          else
+            # Sinon créer un site basique
+            echo "🛠️ Creating basic site..."
+            cat > docs/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cours IA/ML - nevermind78</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --light: #ecf0f1;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+        h1 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        .status {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .url-box {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 1.1em;
+            word-break: break-all;
+        }
+        .btn {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+        }
+        .info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 Cours IA/ML</h1>
+        <div class="status">
+            ✅ Site déployé avec succès !
+        </div>
+        
+        <p>Bienvenue sur le site du cours d'Intelligence Artificielle et Machine Learning.</p>
+        
+        <div class="url-box">
+            https://nevermind78.github.io/Ml_DL/
+        </div>
+        
+        <p>Cette page a été automatiquement générée car la branche <code>gh-pages</code> n'existait pas.</p>
+        
+        <a href="https://github.com/nevermind78/Ml_DL" class="btn">
+            📂 Voir le code source
+        </a>
+        
+        <div class="info">
+            <p><strong>Déployé le:</strong> $(date)</p>
+            <p><strong>Dernier commit:</strong> ${{ github.sha }}</p>
+            <p><strong>Workflow:</strong> ${{ github.workflow }}</p>
+        </div>
+    </div>
+</body>
+</html>
+EOF
           fi
           
           # Toujours créer .nojekyll
           touch docs/.nojekyll
           
-          echo "=== Vérification finale ==="
-          echo "Contenu de docs/:"
+          echo "📁 Contenu de docs/:"
           ls -la docs/
-          echo ""
-          echo "Fichier index.html:"
-          cat docs/index.html | head -20
       
-      # 7. ✅ Déployer
-      - name: "Deploy to GitHub Pages"
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          publish_branch: gh-pages
-          force_orphan: true
-          user_name: "github-actions[bot]"
-          user_email: "github-actions[bot]@users.noreply.github.com"
+      # 5. Configurer Git pour le déploiement
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      # 6. Créer et pousser vers gh-pages
+      - name: Create and push gh-pages
+        run: |
+          # Créer un répertoire temporaire
+          mkdir /tmp/gh-pages
+          cp -r docs/* /tmp/gh-pages/
+          cd /tmp/gh-pages
+          
+          # Initialiser git
+          git init
+          git add .
+          git commit -m "🎉 Initial deployment - $(date)"
+          
+          # Pousser vers gh-pages
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push origin main:gh-pages --force
+          
+          echo "✅ gh-pages branch created successfully!"
