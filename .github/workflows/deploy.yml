@@ -10,51 +10,47 @@ jobs:
     runs-on: "ubuntu-latest"
     
     steps:
-      # Étape 1: Checkout avec token explicite
+      # 1. Checkout AVEC le PAT
       - name: "Checkout repository"
-        uses: actions/checkout@v4
+        uses: "actions/checkout@v4"
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # IMPORTANT
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # ← PAT ici
+          fetch-depth: 0
       
-      # Étape 2: Setup Python
+      # 2. Setup Python
       - name: "Set up Python"
-        uses: actions/setup-python@v5
+        uses: "actions/setup-python@v5"
         with:
           python-version: '3.11'
           cache: 'pip'
       
-      # Étape 3: Installer les dépendances Python
-      - name: "Install Python dependencies"
+      # 3. Installer dépendances
+      - name: "Install dependencies"
         run: |
           pip install --upgrade pip
-          pip install jupyter numpy pandas matplotlib scikit-learn ipywidgets seaborn scipy plotly
+          pip install numpy pandas matplotlib scikit-learn ipywidgets seaborn
       
-      # Étape 4: Installer Quarto
+      # 4. Installer Quarto
       - name: "Install Quarto"
         uses: quarto-dev/quarto-actions/setup@v2
       
-      # Étape 5: Build le site
+      # 5. Build le site
       - name: "Build site"
         run: |
           quarto render
-          # S'assurer que docs/ existe et contient .nojekyll
-          if [ ! -d "docs" ]; then
-            echo "ERROR: docs/ directory not found!"
-            exit 1
-          fi
+          # Créer .nojekyll
           touch docs/.nojekyll
-          ls -la docs/ | head -20
+          echo "✅ Site built successfully"
+          echo "Files in docs/:"
+          ls -la docs/ | head -10
       
-      # Étape 6: Déployer AVEC la bonne configuration
+      # 6. Déployer avec le PAT
       - name: "Deploy to GitHub Pages"
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # ← PAT ici aussi
           publish_dir: ./docs
           publish_branch: gh-pages
           force_orphan: true
           user_name: "github-actions[bot]"
           user_email: "github-actions[bot]@users.noreply.github.com"
-          keep_files: false
-          allow_empty_commit: true
