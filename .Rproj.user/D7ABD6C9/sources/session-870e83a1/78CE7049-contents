@@ -1,0 +1,91 @@
+# Présentation du Cours {.unnumbered}
+
+## Informations Générales
+
+::: {.callout-note icon=false}
+## Détails du cours
+
+- **Intitulé**: Machine Learning et Deep Learning
+- **Département**: Génie Informatique
+- **Niveau**: 2ème année
+- **Semestre**: S2
+- **Régime**: Mixte
+- **Volume Horaire Total**: 42h
+  - Cours / TD: 21h
+  - TP / Projet: 21h
+:::
+
+## Prérequis
+
+### Mathématiques
+
+- **Algèbre linéaire**: vecteurs, matrices, opérations matricielles
+- **Calcul différentiel et intégral**: dérivées, gradients, intégrales
+- **Probabilités et statistiques**: distributions de probabilité, estimations de paramètres, tests d'hypothèses
+
+### Programmation
+
+- **Python**: structures de contrôle, fonctions, classes
+- **Bibliothèques**: NumPy, Pandas, Matplotlib
+
+## Objectifs d'Apprentissage
+
+Au terme de ce cours, vous serez capable de:
+
+1. Comprendre les concepts fondamentaux du Machine Learning
+2. Identifier différents types de problèmes ML et leurs solutions
+3. Appliquer des techniques de régression et classification
+4. Maîtriser les méthodes d'évaluation et d'optimisation
+5. Comprendre et implémenter des réseaux de neurones
+6. Utiliser des techniques avancées (CNN, Transfer Learning, GAN)
+
+## Structure du Cours
+
+Le cours est divisé en 3 parties principales:
+
+### Partie 1: Machine Learning Fondamental (S1-S10)
+- Introduction à l'IA et au ML
+- Apprentissage supervisé (classification et régression)
+- Apprentissage non supervisé (clustering)
+
+### Partie 2: Réseaux de Neurones & Deep Learning (S11-S20)
+- Réseaux de neurones artificiels
+- CNN et Transfer Learning
+- RNN et séries temporelles
+- IA générative et GAN
+
+### Partie 3: Projet & Évaluation (S21-S24)
+- Mini-projet en groupe
+- Présentations et évaluations
+
+## Évaluation
+
+| Type | Pourcentage | Détails |
+|------|-------------|---------|
+| **Mini-Projet** | 60% | Rapport (20%) + Code (20%) + Présentation (20%) |
+| **Devoir Surveillé** | 40% | Théorie (20%) + Pratique (20%) |
+
+## Ressources
+
+### Ouvrages de référence
+
+1. **Géron, A. (2019)** - *Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow*, 2nd Edition
+2. **Goodfellow, Bengio & Courville (2016)** - *Deep Learning*, MIT Press
+3. **Chollet, F. (2021)** - *Deep Learning with Python*, 2nd Edition
+
+### Outils
+
+- **Langages**: Python
+- **Bibliothèques**: Scikit-learn, TensorFlow, Keras, PyTorch (optionnel)
+- **Environnement**: Jupyter Notebook, Google Colab, VS Code
+
+## Contact
+
+- **Enseignants**: Dr. Fatma Sbiaa, Abdallah Khemais
+- **Directeur du Département**: Mr. Ramzi Mahmoudi
+- **Directeur des Études**: Pr. Moncef Bouzidi
+
+::: {.callout-tip}
+## Plateforme d'apprentissage
+Tous les supports de cours sont disponibles sur Moodle/Teams
+:::

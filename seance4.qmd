@@ -1,0 +1,808 @@
+# Séance 4: TD1 - Modèles de Classification de Base
+
+::: {.callout-note icon=false}
+## Informations de la séance
+- **Type**: Travaux Dirigés
+- **Durée**: 2h
+- **Objectifs**: Obj4, Obj6
+:::
+
+## Introduction
+
+Ce TD vous permet d'approfondir votre compréhension théorique et pratique des principaux algorithmes de classification. Vous allez travailler sur des exercices conceptuels et des problèmes appliqués.
+
+## Partie 1: Arbres de Décision
+
+### Exercice 1.1: Construction d'un Arbre
+
+Considérez le dataset suivant pour prédire si un client va acheter un ordinateur:
+
+| Age | Revenu | Étudiant | Crédit | Achète |
+|-----|--------|----------|--------|--------|
+| Jeune | Élevé | Non | Excellent | Non |
+| Jeune | Élevé | Non | Excellent | Non |
+| Moyen | Élevé | Non | Excellent | Oui |
+| Senior | Moyen | Non | Excellent | Oui |
+| Senior | Faible | Oui | Excellent | Oui |
+| Senior | Faible | Oui | Bon | Non |
+| Moyen | Faible | Oui | Bon | Oui |
+| Jeune | Moyen | Non | Excellent | Non |
+| Jeune | Faible | Oui | Excellent | Oui |
+| Senior | Moyen | Oui | Excellent | Oui |
+| Jeune | Moyen | Oui | Bon | Oui |
+| Moyen | Moyen | Non | Bon | Oui |
+| Moyen | Élevé | Oui | Excellent | Oui |
+| Senior | Moyen | Non | Bon | Non |
+
+**Questions:**
+
+1. Calculez l'entropie initiale du dataset
+2. Calculez le gain d'information pour chaque attribut (Age, Revenu, Étudiant, Crédit)
+3. Quel attribut sera choisi comme racine de l'arbre ?
+4. Dessinez l'arbre de décision complet
+
+::: {.callout-tip collapse="true"}
+## Rappels - Formules
+
+**Entropie:**
+$$H(S) = -\sum_{i=1}^{c} p_i \log_2(p_i)$$
+
+**Gain d'Information:**
+$$IG(S, A) = H(S) - \sum_{v \in Values(A)} \frac{|S_v|}{|S|} H(S_v)$$
+
+où:
+- $S$ = ensemble de données
+- $A$ = attribut
+- $c$ = nombre de classes
+- $p_i$ = proportion de la classe $i$
+- $S_v$ = sous-ensemble où $A = v$
+:::
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 1.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import numpy as np
+from collections import Counter
+
+# Données
+data = [
+    ('Jeune', 'Élevé', 'Non', 'Excellent', 'Non'),
+    ('Jeune', 'Élevé', 'Non', 'Excellent', 'Non'),
+    ('Moyen', 'Élevé', 'Non', 'Excellent', 'Oui'),
+    ('Senior', 'Moyen', 'Non', 'Excellent', 'Oui'),
+    ('Senior', 'Faible', 'Oui', 'Excellent', 'Oui'),
+    ('Senior', 'Faible', 'Oui', 'Bon', 'Non'),
+    ('Moyen', 'Faible', 'Oui', 'Bon', 'Oui'),
+    ('Jeune', 'Moyen', 'Non', 'Excellent', 'Non'),
+    ('Jeune', 'Faible', 'Oui', 'Excellent', 'Oui'),
+    ('Senior', 'Moyen', 'Oui', 'Excellent', 'Oui'),
+    ('Jeune', 'Moyen', 'Oui', 'Bon', 'Oui'),
+    ('Moyen', 'Moyen', 'Non', 'Bon', 'Oui'),
+    ('Moyen', 'Élevé', 'Oui', 'Excellent', 'Oui'),
+    ('Senior', 'Moyen', 'Non', 'Bon', 'Non')
+]
+
+def entropy(labels):
+    """Calcule l'entropie"""
+    counter = Counter(labels)
+    total = len(labels)
+    ent = 0
+    for count in counter.values():
+        p = count / total
+        if p > 0:
+            ent -= p * np.log2(p)
+    return ent
+
+def information_gain(data, attr_idx):
+    """Calcule le gain d'information"""
+    # Entropie initiale
+    labels = [row[-1] for row in data]
+    h_s = entropy(labels)
+    
+    # Partition par attribut
+    partitions = {}
+    for row in data:
+        attr_value = row[attr_idx]
+        if attr_value not in partitions:
+            partitions[attr_value] = []
+        partitions[attr_value].append(row[-1])
+    
+    # Entropie pondérée
+    h_s_a = 0
+    total = len(data)
+    for partition_labels in partitions.values():
+        p = len(partition_labels) / total
+        h_s_a += p * entropy(partition_labels)
+    
+    return h_s - h_s_a
+
+# 1. Entropie initiale
+labels = [row[-1] for row in data]
+print(f"1. Entropie initiale: {entropy(labels):.4f}")
+
+# 2. Gain d'information pour chaque attribut
+attributes = ['Age', 'Revenu', 'Étudiant', 'Crédit']
+print("\n2. Gain d'information:")
+gains = {}
+for idx, attr in enumerate(attributes):
+    ig = information_gain(data, idx)
+    gains[attr] = ig
+    print(f"   {attr}: {ig:.4f}")
+
+# 3. Meilleur attribut
+best_attr = max(gains, key=gains.get)
+print(f"\n3. Attribut racine: {best_attr} (IG = {gains[best_attr]:.4f})")
+
+# 4. L'arbre complet nécessiterait une implémentation récursive
+print("\n4. Arbre de décision (structure simplifiée):")
+print("""
+         Age?
+        /    |    \\
+    Jeune  Moyen  Senior
+      |      |      |
+    [Classes selon données]
+""")
+```
+
+**Réponses:**
+
+1. Entropie initiale $\approx$ 0.940
+2. Gains d'information:
+   - Age: ~0.246
+   - Revenu: ~0.029
+   - Étudiant: ~0.151
+   - Crédit: ~0.048
+3. **Age** sera choisi comme racine (gain le plus élevé)
+:::
+
+### Exercice 1.2: Overfitting dans les Arbres
+
+**Question:** Expliquez pourquoi un arbre de décision sans contraintes (profondeur illimitée) tend à faire de l'overfitting.
+
+**Proposez 3 méthodes pour limiter l'overfitting dans les arbres de décision.**
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 1.2
+
+**Pourquoi l'overfitting ?**
+
+Un arbre sans contraintes va créer des branches jusqu'à ce que chaque feuille soit "pure" (contient une seule classe). Cela signifie:
+- L'arbre mémorise les données d'entraînement, y compris le bruit
+- Il crée des règles très spécifiques qui ne généralisent pas
+- La complexité du modèle est trop élevée par rapport aux données
+
+**3 méthodes pour limiter l'overfitting:**
+
+1. **Pré-élagage (Pre-pruning)**:
+   - `max_depth`: Limiter la profondeur maximale
+   - `min_samples_split`: Nombre minimum d'échantillons pour diviser un nœud
+   - `min_samples_leaf`: Nombre minimum d'échantillons dans une feuille
+   - `max_leaf_nodes`: Nombre maximum de feuilles
+
+2. **Post-élagage (Post-pruning)**:
+   - Construire l'arbre complet
+   - Élaguer les branches qui n'apportent pas assez d'amélioration
+   - Utiliser un ensemble de validation pour guider l'élagage
+
+3. **Ensemble Methods**:
+   - Random Forest: moyenne de plusieurs arbres
+   - Gradient Boosting: construction itérative d'arbres
+   - Bagging: bootstrap + agrégation
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Exemple pratique
+from sklearn.tree import DecisionTreeClassifier
+
+# Arbre avec overfitting
+tree_overfit = DecisionTreeClassifier()  # Pas de contraintes
+
+# Arbre régularisé
+tree_regularized = DecisionTreeClassifier(
+    max_depth=5,              # Profondeur max
+    min_samples_split=10,     # Min échantillons pour split
+    min_samples_leaf=5,       # Min échantillons par feuille
+    max_leaf_nodes=20         # Max feuilles
+)
+```
+:::
+
+## Partie 2: Régression Logistique
+
+### Exercice 2.1: Intuition Probabiliste
+
+Considérez le modèle de régression logistique suivant pour prédire l'admission à l'université:
+
+$$P(admission=1|score) = \frac{1}{1 + e^{-(0.05 \times score - 3)}}$$
+
+**Questions:**
+
+1. Quelle est la probabilité d'admission pour un score de 60?
+2. Quelle est la probabilité d'admission pour un score de 80?
+3. Quel score donne une probabilité d'admission de 50%?
+4. Interprétez le coefficient 0.05
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 2.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+def sigmoid(z):
+    """Fonction sigmoïde"""
+    return 1 / (1 + np.exp(-z))
+
+def prob_admission(score):
+    """Probabilité d'admission"""
+    z = 0.05 * score - 3
+    return sigmoid(z)
+
+# 1. Probabilité pour score = 60
+p_60 = prob_admission(60)
+print(f"1. P(admission|score=60) = {p_60:.4f} = {p_60*100:.2f}%")
+
+# 2. Probabilité pour score = 80
+p_80 = prob_admission(80)
+print(f"2. P(admission|score=80) = {p_80:.4f} = {p_80*100:.2f}%")
+
+# 3. Score pour P = 0.5
+# 0.5 = 1/(1 + e^(-(0.05*score - 3)))
+# => 0.05*score - 3 = 0
+# => score = 60
+score_50 = 3 / 0.05
+print(f"3. Score pour P=50%: {score_50}")
+
+# 4. Interprétation du coefficient
+print(f"\n4. Coefficient 0.05:")
+print(f"   - Augmenter le score de 1 point augmente z de 0.05")
+print(f"   - Cela augmente les log-odds de 0.05")
+print(f"   - Odds ratio = e^0.05 = {np.exp(0.05):.4f}")
+
+# Visualisation
+scores = np.linspace(0, 100, 1000)
+probs = [prob_admission(s) for s in scores]
+
+plt.figure(figsize=(10, 6))
+plt.plot(scores, probs, linewidth=2)
+plt.axhline(y=0.5, color='r', linestyle='--', alpha=0.7, label='P = 0.5')
+plt.axvline(x=60, color='r', linestyle='--', alpha=0.7, label='Score = 60')
+plt.scatter([60, 80], [p_60, p_80], color='red', s=100, zorder=5)
+plt.xlabel('Score')
+plt.ylabel('Probabilité d\'admission')
+plt.title('Régression Logistique - Admission à l\'université')
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.show()
+```
+
+**Réponses:**
+
+1. P(admission|score=60) = 0.50 = 50%
+2. P(admission|score=80) = 0.73 = 73%
+3. Score pour P=50%: **60**
+4. Le coefficient 0.05 indique qu'augmenter le score de 1 point multiplie les odds d'admission par e^0.05 $\approx$ 1.051 (5.1% d'augmentation)
+:::
+
+### Exercice 2.2: Régression Logistique Multiclasse
+
+Expliquez comment adapter la régression logistique pour un problème multiclasse (ex: 3 classes). Quelles sont les deux approches principales?
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 2.2
+
+**Deux approches pour la classification multiclasse:**
+
+### 1. One-vs-Rest (OvR) ou One-vs-All (OvA)
+
+**Principe:**
+- Entraîner K modèles binaires (K = nombre de classes)
+- Chaque modèle sépare une classe vs toutes les autres
+- Prédiction: choisir la classe avec la probabilité la plus élevée
+
+**Exemple avec 3 classes:**
+
+- Modèle 1: Classe A vs (B, C)
+- Modèle 2: Classe B vs (A, C)
+- Modèle 3: Classe C vs (A, B)
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.linear_model import LogisticRegression
+
+# One-vs-Rest (par défaut dans scikit-learn)
+ovr_model = LogisticRegression(multi_class='ovr')
+ovr_model.fit(X_train, y_train)
+```
+
+### 2. Softmax (ou Multinomial)
+
+**Principe:**
+- Un seul modèle qui produit K probabilités (une par classe)
+- Utilise la fonction softmax au lieu de sigmoid
+- Les probabilités somment à 1
+
+**Fonction Softmax:**
+$$P(y=k|X) = \frac{e^{z_k}}{\sum_{j=1}^{K} e^{z_j}}$$
+
+où $z_k = w_k^T X + b_k$
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Softmax / Multinomial
+softmax_model = LogisticRegression(multi_class='multinomial')
+softmax_model.fit(X_train, y_train)
+```
+
+**Comparaison:**
+
+| Critère | One-vs-Rest | Softmax |
+|---------|-------------|---------|
+| Nombre de modèles | K modèles | 1 modèle |
+| Probabilités | Peuvent dépasser 1 (total) | Somment à 1 |
+| Entraînement | Plus rapide | Plus lent |
+| Performance | Généralement similaire | Légèrement meilleur |
+| Calibration | Moins bonne | Meilleure |
+
+:::
+
+## Partie 3: k-Nearest Neighbors
+
+### Exercice 3.1: Distance et Voisinage
+
+Considérez les points suivants dans un espace 2D:
+
+| Point | x1 | x2 | Classe |
+|-------|----|----|--------|
+| A | 2 | 3 | Rouge |
+| B | 3 | 4 | Rouge |
+| C | 5 | 6 | Bleu |
+| D | 5 | 4 | Bleu |
+| E | 7 | 8 | Bleu |
+
+Nouveau point: **P (4, 5)**
+
+**Questions:**
+
+1. Calculez la distance euclidienne entre P et chaque point
+2. Avec k=3, quelle classe sera prédite pour P?
+3. Que se passerait-il avec k=5?
+4. Pourquoi est-il important de normaliser les données avant d'utiliser k-NN?
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 3.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import numpy as np
+from collections import Counter
+
+# Points
+points = {
+    'A': ([2, 3], 'Rouge'),
+    'B': ([3, 4], 'Rouge'),
+    'C': ([5, 6], 'Bleu'),
+    'D': ([5, 4], 'Bleu'),
+    'E': ([7, 8], 'Bleu')
+}
+
+# Nouveau point
+P = np.array([4, 5])
+
+# 1. Distances euclidiennes
+print("1. Distances euclidiennes:")
+distances = {}
+for name, (coords, classe) in points.items():
+    dist = np.sqrt(np.sum((np.array(coords) - P)**2))
+    distances[name] = (dist, classe)
+    print(f"   P → {name}: {dist:.4f} (classe: {classe})")
+
+# 2. k=3
+print("\n2. k=3:")
+sorted_distances = sorted(distances.items(), key=lambda x: x[1][0])
+k3_neighbors = sorted_distances[:3]
+k3_classes = [classe for _, (_, classe) in k3_neighbors]
+k3_prediction = Counter(k3_classes).most_common(1)[0][0]
+print(f"   3 voisins les plus proches: {[n[0] for n in k3_neighbors]}")
+print(f"   Classes: {k3_classes}")
+print(f"   Prédiction: {k3_prediction}")
+
+# 3. k=5
+print("\n3. k=5:")
+k5_neighbors = sorted_distances[:5]
+k5_classes = [classe for _, (_, classe) in k5_neighbors]
+k5_prediction = Counter(k5_classes).most_common(1)[0][0]
+print(f"   5 voisins les plus proches: {[n[0] for n in k5_neighbors]}")
+print(f"   Classes: {k5_classes}")
+print(f"   Prédiction: {k5_prediction}")
+
+# 4. Importance de la normalisation
+print("\n4. Importance de la normalisation:")
+print("   Sans normalisation, une feature avec une grande échelle")
+print("   dominera le calcul de distance.")
+print("\n   Exemple:")
+print("   - Feature 1 (âge): 20-80 → échelle ~60")
+print("   - Feature 2 (revenu): 20000-100000 → échelle ~80000")
+print("   → La distance sera dominée par le revenu!")
+```
+
+**Réponses:**
+
+1. Distances:
+   - P → A: 2.828
+   - P → B: 1.414 (plus proche)
+   - P → C: 1.414 (plus proche)
+   - P → D: 1.414 (plus proche)
+   - P → E: 4.243
+
+2. Avec k=3: Les 3 voisins sont B (Rouge), C (Bleu), D (Bleu)
+   - Vote: 1 Rouge, 2 Bleus
+   - **Prédiction: Bleu**
+
+3. Avec k=5: Tous les points
+   - Vote: 2 Rouges, 3 Bleus
+   - **Prédiction: Bleu** (même résultat)
+
+4. **Normalisation importante** car:
+   - Les features avec de grandes valeurs dominent le calcul de distance
+   - Exemple: Si une feature est en milliers et l'autre en dizaines, la première écrasera la seconde
+   - Solution: StandardScaler ou MinMaxScaler
+:::
+
+## Partie 4: Naive Bayes
+
+### Exercice 4.1: Application du Théorème de Bayes
+
+Dataset pour classification de courriels:
+
+| Courriel | "gratuit" | "argent" | "viagra" | Classe |
+|----------|-----------|----------|----------|--------|
+| 1 | Oui | Non | Non | Spam |
+| 2 | Oui | Oui | Oui | Spam |
+| 3 | Non | Non | Non | Ham |
+| 4 | Non | Non | Non | Ham |
+| 5 | Oui | Oui | Non | Spam |
+
+Nouveau courriel contient: **"gratuit"** et **"argent"**
+
+**Calculez P(Spam | gratuit, argent) et P(Ham | gratuit, argent)**
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 4.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+# Données
+emails = [
+    {'gratuit': 1, 'argent': 0, 'viagra': 0, 'classe': 'Spam'},
+    {'gratuit': 1, 'argent': 1, 'viagra': 1, 'classe': 'Spam'},
+    {'gratuit': 0, 'argent': 0, 'viagra': 0, 'classe': 'Ham'},
+    {'gratuit': 0, 'argent': 0, 'viagra': 0, 'classe': 'Ham'},
+    {'gratuit': 1, 'argent': 1, 'viagra': 0, 'classe': 'Spam'},
+]
+
+# Probabilités a priori
+n_spam = sum(1 for e in emails if e['classe'] == 'Spam')
+n_ham = sum(1 for e in emails if e['classe'] == 'Ham')
+total = len(emails)
+
+p_spam = n_spam / total
+p_ham = n_ham / total
+
+print("Probabilités a priori:")
+print(f"P(Spam) = {n_spam}/{total} = {p_spam}")
+print(f"P(Ham) = {n_ham}/{total} = {p_ham}")
+
+# Probabilités conditionnelles pour Spam
+spam_emails = [e for e in emails if e['classe'] == 'Spam']
+p_gratuit_spam = sum(e['gratuit'] for e in spam_emails) / n_spam
+p_argent_spam = sum(e['argent'] for e in spam_emails) / n_spam
+
+print(f"\nP(gratuit|Spam) = {p_gratuit_spam}")
+print(f"P(argent|Spam) = {p_argent_spam}")
+
+# Probabilités conditionnelles pour Ham
+ham_emails = [e for e in emails if e['classe'] == 'Ham']
+p_gratuit_ham = sum(e['gratuit'] for e in ham_emails) / n_ham
+p_argent_ham = sum(e['argent'] for e in ham_emails) / n_ham
+
+print(f"\nP(gratuit|Ham) = {p_gratuit_ham}")
+print(f"P(argent|Ham) = {p_argent_ham}")
+
+# Calcul Naive Bayes (hypothèse d'indépendance)
+# P(Spam | gratuit, argent) $\propto$ P(gratuit|Spam) * P(argent|Spam) * P(Spam)
+numerator_spam = p_gratuit_spam * p_argent_spam * p_spam
+numerator_ham = p_gratuit_ham * p_argent_ham * p_ham
+
+# Normalisation
+p_spam_given_words = numerator_spam / (numerator_spam + numerator_ham)
+p_ham_given_words = numerator_ham / (numerator_spam + numerator_ham)
+
+print(f"\nRésultats:")
+print(f"P(Spam | gratuit, argent) = {p_spam_given_words:.4f}")
+print(f"P(Ham | gratuit, argent) = {p_ham_given_words:.4f}")
+print(f"\nPrédiction: {'Spam' if p_spam_given_words > p_ham_given_words else 'Ham'}")
+```
+
+**Résolution manuelle:**
+
+**Étape 1: Probabilités a priori**
+
+- P(Spam) = 3/5 = 0.6
+- P(Ham) = 2/5 = 0.4
+
+**Étape 2: Probabilités conditionnelles**
+
+Pour Spam:
+- P(gratuit|Spam) = 3/3 = 1.0
+- P(argent|Spam) = 2/3 $\approx$ 0.67
+
+Pour Ham:
+- P(gratuit|Ham) = 0/2 = 0
+- P(argent|Ham) = 0/2 = 0
+
+**Étape 3: Application de Bayes**
+
+P(Spam | gratuit, argent) $\propto$ 1.0 × 0.67 × 0.6 = 0.4
+P(Ham | gratuit, argent) $\propto$ 0 × 0 × 0.4 = 0
+
+**Prédiction: Spam** (avec 100% de confiance)
+:::
+
+## Partie 5: Gradient Boosting (XGBoost/LightGBM)
+
+### Exercice 5.1: Comprendre le Boosting
+
+**Questions conceptuelles:**
+
+1. Quelle est la différence fondamentale entre Random Forest (Bagging) et Gradient Boosting?
+2. Pourquoi le Gradient Boosting est-il plus sensible à l'overfitting que Random Forest?
+3. Quels sont les 3 hyperparamètres les plus importants à ajuster pour XGBoost/LightGBM?
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 5.1
+
+**1. Différence Bagging vs Boosting:**
+
+| Aspect | Random Forest (Bagging) | Gradient Boosting |
+|--------|------------------------|-------------------|
+| **Construction** | Parallèle (arbres indépendants) | Séquentielle (arbres dépendants) |
+| **Objectif** | Réduire la variance | Réduire le biais |
+| **Données** | Bootstrap (échantillonnage) | Totalité des données |
+| **Poids** | Tous arbres égaux | Arbres pondérés |
+| **Prédiction** | Moyenne simple | Somme pondérée |
+| **Focus** | Erreurs aléatoires | Erreurs résiduelles |
+
+
+**Diagramme mermaid (conversion échouée):**
+```
+graph LR
+    A[Random Forest] --> B[Arbre 1]
+    A --> C[Arbre 2]
+    A --> D[Arbre N]
+    B --> E[V...
+```
+
+
+**2. Sensibilité à l'overfitting:**
+
+Gradient Boosting est plus sensible car:
+- Chaque arbre se concentre sur les erreurs précédentes
+- Risque d'apprendre le bruit si trop d'itérations
+- Peut "mémoriser" les cas difficiles du train set
+- Pas de randomisation par défaut (contrairement à RF)
+
+**Solutions:**
+- Limiter le nombre d'arbres (`n_estimators`)
+- Réduire le taux d'apprentissage (`learning_rate`)
+- Limiter la profondeur (`max_depth`)
+- Early stopping avec validation set
+
+**3. Hyperparamètres clés:**
+
+```{python}
+#| echo: true
+#| eval: false
+
+from xgboost import XGBClassifier
+
+model = XGBClassifier(
+    # 1. Nombre d'arbres
+    n_estimators=100,  # Plus = meilleur mais risque overfitting
+    
+    # 2. Taux d'apprentissage
+    learning_rate=0.1,  # Plus faible = besoin de plus d'arbres
+                        # Typage: 0.01-0.3
+    
+    # 3. Profondeur maximale
+    max_depth=6,  # Plus profond = plus complexe
+                  # Typique: 3-10
+    
+    # Bonus importants:
+    subsample=0.8,      # Échantillonnage des données (0.5-1.0)
+    colsample_bytree=0.8,  # Échantillonnage des features
+    min_child_weight=1,    # Régularisation
+    
+    random_state=42
+)
+```
+
+**Recommandations de tuning:**
+
+1. **Commencer avec:**
+
+   - `learning_rate=0.1`
+   - `max_depth=6`
+   - `n_estimators=100`
+
+2. **Puis optimiser:**
+
+   - Augmenter `n_estimators` + réduire `learning_rate`
+   - Ajuster `max_depth` (3-10)
+   - Ajouter régularisation (`subsample`, `colsample_bytree`)
+
+3. **Utiliser early stopping:**
+
+```{python}
+#| echo: true
+#| eval: false
+
+model.fit(
+    X_train, y_train,
+    eval_set=[(X_val, y_val)],
+    early_stopping_rounds=10,  # Stop si pas d'amélioration
+    verbose=False
+)
+```
+:::
+
+## Exercices Récapitulatifs
+
+::: {.callout-warning icon=false}
+## Exercice Final: Choix d'Algorithme
+
+Pour chacun des scénarios suivants, recommandez un algorithme et justifiez:
+
+1. **Diagnostic médical** (interprétabilité cruciale, 1000 patients, 20 features)
+2. **Détection de fraude** (millions de transactions, temps réel, déséquilibre 99/1)
+3. **Classification d'images** (50000 images, haute dimension, GPU disponible)
+4. **Prédiction de churn** (10000 clients, features mixtes, besoin de probabilités calibrées)
+5. **Classification de textes** (emails spam, 100000 emails, features = mots)
+::: {.callout-note collapse="true"}
+
+<function_calls>
+<invoke name="artifacts">
+<parameter name="command">update</parameter>
+<parameter name="id">seance4</parameter>
+<parameter name="old_str">5. **Classification de textes** (emails spam</parameter>
+<parameter name="new_str">5. **Classification de textes** (emails spam, 100000 emails, features = mots)
+
+::: {.callout-note collapse="true"}
+## Solution Exercice Final
+
+**1. Diagnostic médical:**
+
+- **Recommandation**: Decision Tree ou Régression Logistique
+- **Justification**:
+
+  - Interprétabilité essentielle pour les médecins
+  - Dataset de taille modérée
+  - Besoin de comprendre les règles de décision
+  - Alternative: Random Forest + feature importance
+
+**2. Détection de fraude:**
+
+- **Recommandation**: XGBoost/LightGBM
+
+- **Justification**:
+
+  - Excellent avec classes déséquilibrées (paramètre `scale_pos_weight`)
+  - Très rapide en prédiction (important pour temps réel)
+  - Gère bien les grandes données
+  - Robuste et performant
+  - Peut utiliser early stopping
+
+**3. Classification d'images:**
+
+- **Recommandation**: CNN (Deep Learning) - hors scope pour l'instant
+- **Justification actuelle avec ML classique**:
+
+  - Random Forest avec features extraites (HOG, SIFT)
+  - SVM avec kernel RBF
+  - Mais performances limitées vs Deep Learning
+
+**4. Prédiction de churn:**
+
+- **Recommandation**: Régression Logistique ou Gradient Boosting
+- **Justification**:
+
+  - Logistic Regression: probabilités bien calibrées, interprétable
+  - Gradient Boosting: meilleures performances, feature importance
+  - Dataset de taille moyenne
+  - Features mixtes gérées par les deux
+
+**5. Classification de textes:**
+
+- **Recommandation**: Naive Bayes (Multinomial)
+- **Justification**:
+
+  - Très performant pour la classification de texte
+  - Rapide à entraîner et prédire
+  - Gère bien les grandes dimensions (nombreux mots)
+  - Probabilités natives
+  - Alternative: Régression Logistique
+:::
+:::
+
+## Résumé du TD
+
+::: {.callout-important icon=false}
+## Points clés à retenir
+
+### Algorithmes et leurs forces
+
+1. **Decision Tree**
+   - $\checkmark$ Interprétable, visuel
+   - X Overfitting, instable
+
+2. **Random Forest**
+   - $\checkmark$ Robuste, performant
+   - X Moins interprétable, mémoire
+
+3. **SVM**
+   - $\checkmark$ Excellent en haute dimension
+   - X Lent, difficile à interpréter
+
+4. **Naive Bayes**
+   - $\checkmark$ Rapide, bon pour texte
+   - X Hypothèse d'indépendance forte
+
+5. **Régression Logistique**
+   - $\checkmark$ Probabilités calibrées, interprétable
+   - X Assume linéarité
+
+6. **k-NN**
+   - $\checkmark$ Simple, pas de training
+   - X Lent en prédiction, besoin normalisation
+
+7. **Gradient Boosting**
+   - $\checkmark$ Très performant, gère déséquilibre
+   - X Sensible overfitting, plus complexe
+:::
+
+## Pour le Prochain Cours
+
+Préparez-vous pour le **TD2 sur les Critères d'Évaluation** où nous approfondirons:
+- Matrice de confusion
+- Precision, Recall, F1-score
+- Courbe ROC et AUC
+- Choix de métriques selon le contexte
+
+## Ressources Complémentaires
+
+1. [Scikit-learn: Choosing the right estimator](https://scikit-learn.org/stable/tutorial/machine_learning_map/)
+2. [StatQuest: Decision Trees](https://www.youtube.com/watch?v=7VeUPuFGJHk)
+3. [XGBoost Documentation](https://xgboost.readthedocs.io/)</parameter>
+

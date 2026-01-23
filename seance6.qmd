@@ -1,0 +1,993 @@
+# Séance 6: TP2 - Classification Multi-classes & Optimisation
+
+::: {.callout-note icon=false}
+## Informations de la séance
+- **Type**: Travaux Pratiques
+- **Durée**: 2h
+- **Objectifs**: Obj6, Obj7
+:::
+
+## Introduction
+
+Dans ce TP, nous allons explorer la **classification multi-classes** et approfondir les techniques d'**optimisation des hyperparamètres**. Contrairement à la classification binaire, nous devrons gérer plusieurs catégories et optimiser nos modèles pour obtenir les meilleures performances possibles.
+
+**Objectifs du TP:**
+
+1. Comprendre la classification multi-classes (One-vs-Rest, One-vs-One)
+2. Maîtriser GridSearchCV et RandomizedSearchCV
+3. Appliquer la validation croisée stratifiée
+4. Comparer systématiquement plusieurs algorithmes
+5. Interpréter les résultats et choisir le meilleur modèle
+
+## 1. Classification Multi-classes : Concepts
+
+### 1.1 Différence avec la Classification Binaire
+
+**Classification Binaire:**
+
+- 2 classes: Positif/Négatif, Oui/Non, 0/1
+- Exemple: Spam/Ham, Malade/Sain
+
+**Classification Multi-classes:**
+
+- 3+ classes mutuellement exclusives
+- Exemple: Reconnaissance de chiffres (0-9), Classification d'espèces d'iris (setosa/versicolor/virginica)
+
+### 1.2 Stratégies de Classification Multi-classes
+
+Certains algorithmes ne supportent pas nativement le multi-classes. Deux stratégies principales:
+
+**One-vs-Rest (OvR) / One-vs-All (OvA):**
+
+- Entraîne N classificateurs binaires (N = nombre de classes)
+- Chaque classificateur: "Classe i vs Toutes les autres"
+- Prédiction: classe avec le score le plus élevé
+
+```python
+# Exemple avec 3 classes: A, B, C
+Classificateur 1: A vs (B+C)
+Classificateur 2: B vs (A+C)  
+Classificateur 3: C vs (A+B)
+```
+
+**One-vs-One (OvO):**
+
+- Entraîne N×(N-1)/2 classificateurs binaires
+- Chaque classificateur: "Classe i vs Classe j"
+- Prédiction: vote majoritaire
+
+```python
+# Exemple avec 3 classes: A, B, C
+Classificateur 1: A vs B
+Classificateur 2: A vs C
+Classificateur 3: B vs C
+```
+
+::: {.callout-tip}
+## Quel algorithme utilise quelle stratégie?
+
+**Natif Multi-classes:**
+
+- Arbre de décision, Random Forest
+- Naive Bayes
+- k-NN
+
+**One-vs-Rest par défaut:**
+
+- Régression Logistique (multinomial possible)
+- SVM linéaire
+
+**One-vs-One par défaut:**
+
+- SVM avec noyau RBF
+:::
+
+### Exercice 1.1: Calcul Théorique
+
+**Questions:**
+
+1. Pour un problème à 10 classes, combien de classificateurs sont nécessaires avec OvR? Avec OvO?
+2. Quel est l'avantage et l'inconvénient de chaque approche?
+3. Pour un dataset de reconnaissance de chiffres manuscrits (0-9), quelle stratégie recommandez-vous?
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 1.1
+
+**1. Nombre de classificateurs:**
+
+- **OvR**: N = 10 classificateurs
+  - 1 classificateur par classe
+  
+- **OvO**: N×(N-1)/2 = 10×9/2 = **45 classificateurs**
+  - Toutes les paires possibles
+
+**2. Avantages/Inconvénients:**
+
+| Stratégie | Avantages | Inconvénients |
+|-----------|-----------|---------------|
+| **OvR** | • Moins de modèles (N)<br>• Plus rapide à entraîner<br>• Moins de mémoire | • Déséquilibre de classes<br>• Ambiguïté possible |
+| **OvO** | • Classes équilibrées<br>• Bonne performance | • Beaucoup de modèles<br>• Lent à entraîner |
+
+**3. Recommandation pour chiffres (0-9):**
+
+**Réponse: OvR (One-vs-Rest)**
+
+Raisons:
+
+- 10 classes → OvO nécessiterait 45 modèles (trop coûteux)
+- Datasets de chiffres souvent équilibrés (le déséquilibre de OvR n'est pas problématique)
+- Plus rapide en prédiction (seulement 10 scores à calculer vs 45 votes)
+- Scikit-learn optimise bien cette approche
+
+Alternative: Utiliser directement des algorithmes natifs multi-classes comme Random Forest ou un réseau de neurones (pour de meilleures performances).
+:::
+
+## 2. Optimisation des Hyperparamètres
+
+### 2.1 Rappel: Paramètres vs Hyperparamètres
+
+**Paramètres:**
+
+- Appris pendant l'entraînement
+- Exemples: poids du réseau, coefficients de régression
+- Optimisés automatiquement par l'algorithme
+
+**Hyperparamètres:**
+
+- Définis **avant** l'entraînement
+- Exemples: taux d'apprentissage, profondeur d'arbre, nombre de voisins
+- Nécessitent une recherche manuelle ou automatique
+
+::: {.callout-warning}
+## Piège classique
+
+**Erreur fréquente**: Optimiser les hyperparamètres sur le **test set**!
+
+**Conséquence**: Surajustement aux données de test → performance irréaliste
+
+**Solution correcte**:
+
+1. Split: Train / Validation / Test (ou Train/Test + Cross-Validation)
+2. Optimiser sur Train/Validation
+3. Évaluer **une seule fois** sur Test
+:::
+
+### 2.2 Grid Search (Recherche par Grille)
+
+**Principe**: Teste **toutes** les combinaisons possibles d'hyperparamètres
+
+```python
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+
+# Définir la grille de recherche
+param_grid = {
+    'n_estimators': [50, 100, 200],
+    'max_depth': [5, 10, 15, None],
+    'min_samples_split': [2, 5, 10]
+}
+
+# Créer le GridSearch
+grid_search = GridSearchCV(
+    estimator=RandomForestClassifier(random_state=42),
+    param_grid=param_grid,
+    cv=5,  # 5-fold cross-validation
+    scoring='accuracy',
+    n_jobs=-1,  # Utilise tous les CPU
+    verbose=2
+)
+
+# Entraîner
+grid_search.fit(X_train, y_train)
+
+# Meilleurs hyperparamètres
+print("Meilleurs paramètres:", grid_search.best_params_)
+print("Meilleur score CV:", grid_search.best_score_)
+
+# Utiliser le meilleur modèle
+best_model = grid_search.best_estimator_
+```
+
+**Avantages:**
+
+- Exhaustif: teste toutes les combinaisons
+- Garantit de trouver le meilleur dans la grille
+
+**Inconvénients:**
+
+- Coût computationnel: 3 × 4 × 3 = **36 modèles** × 5 folds = **180 entraînements**!
+- Explosion combinatoire avec nombreux hyperparamètres
+
+### 2.3 Randomized Search (Recherche Aléatoire)
+
+**Principe**: Échantillonne **aléatoirement** des combinaisons
+
+```python
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import randint, uniform
+
+# Distributions pour échantillonnage
+param_distributions = {
+    'n_estimators': randint(50, 300),
+    'max_depth': randint(5, 30),
+    'min_samples_split': randint(2, 20),
+    'min_samples_leaf': randint(1, 10)
+}
+
+# Créer le RandomizedSearch
+random_search = RandomizedSearchCV(
+    estimator=RandomForestClassifier(random_state=42),
+    param_distributions=param_distributions,
+    n_iter=50,  # Nombre d'itérations
+    cv=5,
+    scoring='f1_weighted',
+    n_jobs=-1,
+    random_state=42,
+    verbose=2
+)
+
+random_search.fit(X_train, y_train)
+
+print("Meilleurs paramètres:", random_search.best_params_)
+print("Meilleur score:", random_search.best_score_)
+```
+
+**Avantages:**
+
+- Plus rapide que GridSearch
+- Explore un espace plus large
+- Mieux pour nombreux hyperparamètres
+
+**Inconvénients:**
+
+- Pas de garantie d'optimalité
+- Dépend du nombre d'itérations
+
+::: {.callout-tip}
+## Quand utiliser quoi?
+
+**GridSearchCV** → Peu d'hyperparamètres (<4), petites grilles, besoin d'exhaustivité
+
+**RandomizedSearchCV** → Nombreux hyperparamètres, grand espace de recherche, budget de temps limité
+:::
+
+### 2.4 Validation Croisée Stratifiée
+
+Pour le **multi-classes**, important d'utiliser **StratifiedKFold**:
+
+```python
+from sklearn.model_selection import StratifiedKFold
+
+# Validation croisée stratifiée (préserve la distribution des classes)
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+grid_search = GridSearchCV(
+    estimator=model,
+    param_grid=param_grid,
+    cv=cv,  # Utilise StratifiedKFold
+    scoring='f1_weighted'
+)
+```
+
+**Pourquoi?** Garantit que chaque fold a la même proportion de classes qu'à l'origine.
+
+## 3. Cas Pratique: Classification Iris Multi-classes
+
+### 3.1 Chargement et Exploration
+
+```python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Chargement
+iris = load_iris()
+X, y = iris.data, iris.target
+
+# Conversion en DataFrame
+df = pd.DataFrame(X, columns=iris.feature_names)
+df['species'] = iris.target_names[y]
+
+print("=" * 60)
+print("DATASET IRIS - CLASSIFICATION MULTI-CLASSES")
+print("=" * 60)
+print(f"\nShape: {X.shape}")
+print(f"Classes: {iris.target_names}")
+print(f"\nDistribution des classes:")
+print(pd.Series(y).value_counts().sort_index())
+
+# Visualisation
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Distribution des classes
+axes[0].bar(iris.target_names, pd.Series(y).value_counts().sort_index())
+axes[0].set_title('Distribution des Classes')
+axes[0].set_ylabel('Nombre d\'échantillons')
+
+# Pairplot simplifié (2 features)
+for i, species in enumerate(iris.target_names):
+    mask = y == i
+    axes[1].scatter(X[mask, 0], X[mask, 1], label=species, alpha=0.6)
+axes[1].set_xlabel(iris.feature_names[0])
+axes[1].set_ylabel(iris.feature_names[1])
+axes[1].set_title('Visualisation 2D des Classes')
+axes[1].legend()
+axes[1].grid(alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# Split
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+# Standardisation
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print(f"\nTrain set: {X_train.shape}")
+print(f"Test set: {X_test.shape}")
+```
+
+### Exercice 3.1: GridSearch sur Logistic Regression
+
+Utilisez GridSearchCV pour optimiser une Régression Logistique multi-classes.
+
+**Hyperparamètres à tester:**
+
+- `C`: [0.01, 0.1, 1, 10, 100]
+- `solver`: ['lbfgs', 'liblinear', 'saga']
+- `multi_class`: ['ovr', 'multinomial']
+
+**Instructions:**
+
+1. Créez la grille de paramètres
+2. Utilisez 5-fold cross-validation stratifiée
+3. Métrique: 'accuracy'
+4. Affichez les meilleurs paramètres et le score
+5. Évaluez sur le test set
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 3.1
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+
+# 1. Définir la grille
+param_grid = {
+    'C': [0.01, 0.1, 1, 10, 100],
+    'solver': ['lbfgs', 'liblinear', 'saga'],
+    'multi_class': ['ovr', 'multinomial']
+}
+
+# 2. Cross-validation stratifiée
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+# 3. GridSearchCV
+grid_search = GridSearchCV(
+    estimator=LogisticRegression(max_iter=1000, random_state=42),
+    param_grid=param_grid,
+    cv=cv,
+    scoring='accuracy',
+    n_jobs=-1,
+    verbose=1
+)
+
+print("Entraînement du GridSearch...")
+grid_search.fit(X_train_scaled, y_train)
+
+# 4. Meilleurs paramètres
+print("\n" + "=" * 60)
+print("RÉSULTATS GRIDSEARCH")
+print("=" * 60)
+print(f"\nMeilleurs paramètres: {grid_search.best_params_}")
+print(f"Meilleur score CV: {grid_search.best_score_:.4f}")
+
+# 5. Évaluation sur test
+best_model = grid_search.best_estimator_
+y_pred = best_model.predict(X_test_scaled)
+test_accuracy = (y_pred == y_test).mean()
+
+print(f"\nAccuracy sur test set: {test_accuracy:.4f}")
+
+# Rapport de classification
+print("\n" + "=" * 60)
+print("RAPPORT DE CLASSIFICATION")
+print("=" * 60)
+print(classification_report(y_test, y_pred, target_names=iris.target_names))
+
+# Matrice de confusion
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=iris.target_names,
+            yticklabels=iris.target_names)
+plt.ylabel('Vraie Classe')
+plt.xlabel('Prédiction')
+plt.title('Matrice de Confusion - Logistic Regression')
+plt.tight_layout()
+plt.show()
+
+# Résultats de toutes les combinaisons (top 10)
+results = pd.DataFrame(grid_search.cv_results_)
+top_10 = results.nsmallest(10, 'rank_test_score')[
+    ['param_C', 'param_solver', 'param_multi_class', 'mean_test_score', 'std_test_score']
+]
+print("\n" + "=" * 60)
+print("TOP 10 COMBINAISONS")
+print("=" * 60)
+print(top_10.to_string(index=False))
+```
+
+**Interprétation:**
+
+- Meilleurs hyperparamètres trouvés (exemple typique):
+  - `C=1.0` (régularisation modérée)
+  - `solver='lbfgs'` (efficace pour petits datasets)
+  - `multi_class='multinomial'` (souvent meilleur que OvR)
+
+- Accuracy ~95-97% sur Iris (dataset facile)
+
+- La multinomial regression traite toutes les classes simultanément (plus cohérent qu'OvR)
+:::
+
+### Exercice 3.2: RandomizedSearch sur Random Forest
+
+Utilisez RandomizedSearchCV pour optimiser un Random Forest.
+
+**Distributions à échantillonner:**
+
+- `n_estimators`: randint(50, 300)
+- `max_depth`: randint(3, 20) + [None]
+- `min_samples_split`: randint(2, 20)
+- `min_samples_leaf`: randint(1, 10)
+- `max_features`: ['sqrt', 'log2', None]
+
+**Instructions:**
+
+1. 50 itérations
+2. 5-fold CV
+3. Métrique: 'f1_weighted'
+4. Comparez avec Logistic Regression
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 3.2
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import randint
+
+# 1. Distributions
+param_distributions = {
+    'n_estimators': randint(50, 300),
+    'max_depth': randint(3, 20),
+    'min_samples_split': randint(2, 20),
+    'min_samples_leaf': randint(1, 10),
+    'max_features': ['sqrt', 'log2', None]
+}
+
+# 2. RandomizedSearch
+random_search = RandomizedSearchCV(
+    estimator=RandomForestClassifier(random_state=42),
+    param_distributions=param_distributions,
+    n_iter=50,
+    cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
+    scoring='f1_weighted',
+    n_jobs=-1,
+    random_state=42,
+    verbose=1
+)
+
+print("Entraînement du RandomizedSearch...")
+random_search.fit(X_train, y_train)  # Pas besoin de scaling pour RF
+
+# Résultats
+print("\n" + "=" * 60)
+print("RÉSULTATS RANDOMIZEDSEARCH - RANDOM FOREST")
+print("=" * 60)
+print(f"\nMeilleurs paramètres: {random_search.best_params_}")
+print(f"Meilleur score CV (F1): {random_search.best_score_:.4f}")
+
+# Évaluation
+best_rf = random_search.best_estimator_
+y_pred_rf = best_rf.predict(X_test)
+
+from sklearn.metrics import f1_score, accuracy_score
+f1_test = f1_score(y_test, y_pred_rf, average='weighted')
+acc_test = accuracy_score(y_test, y_pred_rf)
+
+print(f"\nF1-Score test: {f1_test:.4f}")
+print(f"Accuracy test: {acc_test:.4f}")
+
+# Comparaison avec Logistic Regression
+print("\n" + "=" * 60)
+print("COMPARAISON MODÈLES")
+print("=" * 60)
+
+comparison = pd.DataFrame({
+    'Modèle': ['Logistic Regression', 'Random Forest'],
+    'CV Score': [grid_search.best_score_, random_search.best_score_],
+    'Test Accuracy': [test_accuracy, acc_test],
+    'Test F1': [f1_score(y_test, y_pred, average='weighted'), f1_test]
+})
+print(comparison.to_string(index=False))
+
+# Importance des features (RF seulement)
+feature_importance = pd.DataFrame({
+    'Feature': iris.feature_names,
+    'Importance': best_rf.feature_importances_
+}).sort_values('Importance', ascending=False)
+
+print("\n" + "=" * 60)
+print("IMPORTANCE DES FEATURES (Random Forest)")
+print("=" * 60)
+print(feature_importance.to_string(index=False))
+
+# Visualisation
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Importance
+axes[0].barh(feature_importance['Feature'], feature_importance['Importance'])
+axes[0].set_xlabel('Importance')
+axes[0].set_title('Importance des Features')
+axes[0].invert_yaxis()
+
+# Matrice de confusion RF
+cm_rf = confusion_matrix(y_test, y_pred_rf)
+sns.heatmap(cm_rf, annot=True, fmt='d', cmap='Greens', ax=axes[1],
+            xticklabels=iris.target_names,
+            yticklabels=iris.target_names)
+axes[1].set_ylabel('Vraie Classe')
+axes[1].set_xlabel('Prédiction')
+axes[1].set_title('Matrice de Confusion - Random Forest')
+
+plt.tight_layout()
+plt.show()
+```
+
+**Interprétation:**
+
+- Random Forest généralement légèrement meilleur ou équivalent à Logistic Regression sur Iris
+- Avantage de RF: gère les relations non-linéaires
+- Importance des features révèle que `petal length` et `petal width` sont les plus discriminantes
+:::
+
+## 4. Comparaison Systématique de Plusieurs Algorithmes
+
+### Exercice 4.1: Pipeline de Comparaison
+
+Comparez 5 algorithmes avec optimisation:
+
+1. Logistic Regression
+2. Random Forest
+3. SVM (RBF kernel)
+4. k-NN
+5. Gradient Boosting (XGBoost si disponible)
+
+Pour chaque algorithme:
+- Optimisez les hyperparamètres avec RandomizedSearch (ou Grid si petite grille)
+- Utilisez 5-fold CV stratifiée
+- Métrique: F1 weighted
+- Évaluez sur test set
+- Créez un tableau comparatif final
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 4.1
+
+```python
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.model_selection import RandomizedSearchCV
+import time
+
+# Préparation des modèles et grilles
+models_params = {
+    'Logistic Regression': {
+        'model': LogisticRegression(max_iter=1000, random_state=42),
+        'params': {
+            'C': [0.01, 0.1, 1, 10],
+            'solver': ['lbfgs', 'saga'],
+            'multi_class': ['ovr', 'multinomial']
+        },
+        'search_type': 'grid',
+        'needs_scaling': True
+    },
+    'Random Forest': {
+        'model': RandomForestClassifier(random_state=42),
+        'params': {
+            'n_estimators': randint(50, 200),
+            'max_depth': randint(3, 15),
+            'min_samples_split': randint(2, 10)
+        },
+        'search_type': 'random',
+        'n_iter': 30,
+        'needs_scaling': False
+    },
+    'SVM': {
+        'model': SVC(random_state=42),
+        'params': {
+            'C': [0.1, 1, 10, 100],
+            'gamma': ['scale', 'auto', 0.001, 0.01],
+            'kernel': ['rbf', 'linear']
+        },
+        'search_type': 'grid',
+        'needs_scaling': True
+    },
+    'k-NN': {
+        'model': KNeighborsClassifier(),
+        'params': {
+            'n_neighbors': range(3, 20),
+            'weights': ['uniform', 'distance'],
+            'metric': ['euclidean', 'manhattan']
+        },
+        'search_type': 'grid',
+        'needs_scaling': True
+    },
+    'Gradient Boosting': {
+        'model': GradientBoostingClassifier(random_state=42),
+        'params': {
+            'n_estimators': randint(50, 200),
+            'learning_rate': uniform(0.01, 0.3),
+            'max_depth': randint(3, 10),
+            'subsample': uniform(0.7, 0.3)
+        },
+        'search_type': 'random',
+        'n_iter': 30,
+        'needs_scaling': False
+    }
+}
+
+# CV stratifiée
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+# Stocker les résultats
+results = []
+
+print("=" * 80)
+print("COMPARAISON SYSTÉMATIQUE DE 5 ALGORITHMES")
+print("=" * 80)
+
+for name, config in models_params.items():
+    print(f"\n{'='*80}")
+    print(f"Entraînement: {name}")
+    print(f"{'='*80}")
+    
+    start_time = time.time()
+    
+    # Choisir les données (scaled ou non)
+    X_tr = X_train_scaled if config['needs_scaling'] else X_train
+    X_te = X_test_scaled if config['needs_scaling'] else X_test
+    
+    # Choisir Grid ou Randomized
+    if config['search_type'] == 'grid':
+        search = GridSearchCV(
+            estimator=config['model'],
+            param_grid=config['params'],
+            cv=cv,
+            scoring='f1_weighted',
+            n_jobs=-1
+        )
+    else:
+        search = RandomizedSearchCV(
+            estimator=config['model'],
+            param_distributions=config['params'],
+            n_iter=config['n_iter'],
+            cv=cv,
+            scoring='f1_weighted',
+            n_jobs=-1,
+            random_state=42
+        )
+    
+    # Entraînement
+    search.fit(X_tr, y_train)
+    
+    # Prédiction
+    y_pred = search.best_estimator_.predict(X_te)
+    
+    # Métriques
+    train_time = time.time() - start_time
+    test_acc = accuracy_score(y_test, y_pred)
+    test_f1 = f1_score(y_test, y_pred, average='weighted')
+    cv_f1 = search.best_score_
+    
+    # Stocker
+    results.append({
+        'Modèle': name,
+        'CV F1': cv_f1,
+        'Test Accuracy': test_acc,
+        'Test F1': test_f1,
+        'Temps (s)': train_time,
+        'Meilleurs Params': str(search.best_params_)
+    })
+    
+    print(f"Meilleurs paramètres: {search.best_params_}")
+    print(f"CV F1: {cv_f1:.4f}")
+    print(f"Test Accuracy: {test_acc:.4f}")
+    print(f"Test F1: {test_f1:.4f}")
+    print(f"Temps d'entraînement: {train_time:.2f}s")
+
+# DataFrame des résultats
+df_results = pd.DataFrame(results)
+df_results = df_results.sort_values('Test F1', ascending=False).reset_index(drop=True)
+
+print("\n" + "=" * 80)
+print("TABLEAU COMPARATIF FINAL")
+print("=" * 80)
+print(df_results[['Modèle', 'CV F1', 'Test Accuracy', 'Test F1', 'Temps (s)']].to_string(index=False))
+
+# Visualisation
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+
+# Graphique 1: Comparaison F1
+x_pos = range(len(df_results))
+axes[0].barh(x_pos, df_results['Test F1'], color='skyblue', alpha=0.8, label='Test F1')
+axes[0].barh(x_pos, df_results['CV F1'], color='orange', alpha=0.6, label='CV F1')
+axes[0].set_yticks(x_pos)
+axes[0].set_yticklabels(df_results['Modèle'])
+axes[0].set_xlabel('F1-Score')
+axes[0].set_title('Comparaison des Performances (F1)')
+axes[0].legend()
+axes[0].grid(axis='x', alpha=0.3)
+axes[0].invert_yaxis()
+
+# Graphique 2: Temps vs Performance
+axes[1].scatter(df_results['Temps (s)'], df_results['Test F1'], s=100, alpha=0.6)
+for idx, row in df_results.iterrows():
+    axes[1].annotate(row['Modèle'], 
+                     (row['Temps (s)'], row['Test F1']),
+                     fontsize=9, ha='right')
+axes[1].set_xlabel('Temps d\'entraînement (s)')
+axes[1].set_ylabel('Test F1-Score')
+axes[1].set_title('Trade-off Performance vs Temps')
+axes[1].grid(alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# Recommandation
+best_model_name = df_results.iloc[0]['Modèle']
+print("\n" + "=" * 80)
+print("RECOMMANDATION")
+print("=" * 80)
+print(f"→ Meilleur modèle: {best_model_name}")
+print(f"  Raison: Meilleur F1-Score sur test ({df_results.iloc[0]['Test F1']:.4f})")
+
+# Si plusieurs modèles proches, considérer le temps
+top_3 = df_results.head(3)
+if (top_3['Test F1'].max() - top_3['Test F1'].min()) < 0.02:
+    fastest = top_3.loc[top_3['Temps (s)'].idxmin()]
+    print(f"\nNote: Les 3 meilleurs modèles ont des performances similaires.")
+    print(f"   Considérez {fastest['Modèle']} (plus rapide: {fastest['Temps (s)']:.1f}s)")
+    
+# Sauvegarde des résultats
+print("\nSauvegarde des résultats...")
+df_results.to_csv('resultats_comparaison_modeles.csv', index=False)
+print("Résultats sauvegardés dans 'resultats_comparaison_modeles.csv'")
+# Pour le Datasets Digits (classification de chiffres)
+# Utilisez la fonction `load_digits` de sklearn
+
+from sklearn.datasets import load_digits
+
+digits = load_digits()
+X, y = digits.data, digits.target
+
+# Analyse rapide
+print(f"Dataset Digits - Shape: {X.shape}")
+print(f"Classes: {digits.target_names}")
+print(f"Nombre d'images: {X.shape[0]}")
+print(f"Dimensions de chaque image: {digits.images[0].shape} (8x8 pixels)")
+print(f"Valeurs de pixel normalisées entre 0 et 16")
+
+# Visualisation de quelques chiffres
+fig, axes = plt.subplots(2, 5, figsize=(12, 5))
+for i, ax in enumerate(axes.flat):
+    ax.imshow(digits.images[i], cmap='binary')
+    ax.set_title(f"Chiffre: {digits.target[i]}")
+    ax.axis('off')
+plt.suptitle("Exemples de chiffres manuscrits (8x8 pixels)")
+plt.tight_layout()
+plt.show()
+
+# Distribution des classes
+plt.figure(figsize=(10, 4))
+plt.subplot(1, 2, 1)
+pd.Series(y).value_counts().sort_index().plot(kind='bar')
+plt.title('Distribution des Classes (Chiffres 0-9)')
+plt.xlabel('Chiffre')
+plt.ylabel('Nombre d\'échantillons')
+plt.grid(axis='y', alpha=0.3)
+
+plt.subplot(1, 2, 2)
+pd.Series(y).value_counts().plot(kind='pie', autopct='%1.1f%%')
+plt.title('Proportion des Classes')
+plt.ylabel('')
+plt.tight_layout()
+plt.show()
+
+## 5.2 Classification Multi-classes sur Digits
+
+# Split et normalisation
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y
+)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print(f"Train set: {X_train.shape} ({X_train.shape[0]/X.shape[0]:.1%})")
+print(f"Test set: {X_test.shape} ({X_test.shape[0]/X.shape[0]:.1%})")
+
+### Exercice 5.1: OvR vs OvO avec SVM
+
+from sklearn.svm import SVC
+from sklearn.multiclass import OneVsRestClassifier, OneVsOneClassifier
+
+# Comparaison OvR vs OvO
+ovr_clf = OneVsRestClassifier(SVC(kernel='rbf', random_state=42))
+ovo_clf = OneVsOneClassifier(SVC(kernel='rbf', random_state=42))
+
+print("Entraînement des modèles...")
+ovr_clf.fit(X_train_scaled, y_train)
+ovo_clf.fit(X_train_scaled, y_train)
+
+# Évaluation
+from sklearn.metrics import classification_report, confusion_matrix
+
+print("\n" + "="*60)
+print("COMPARAISON OVR vs OVO SUR DIGITS")
+print("="*60)
+
+for name, clf in [("OvR", ovr_clf), ("OvO", ovo_clf)]:
+    y_pred = clf.predict(X_test_scaled)
+    accuracy = accuracy_score(y_test, y_pred)
+    print(f"\n{name}:")
+    print(f"  Accuracy: {accuracy:.4f}")
+    print(f"  Nombre de classificateurs: {len(clf.estimators_)}")
+
+# Visualisation des matrices de confusion
+fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+for idx, (name, clf) in enumerate([("OvR", ovr_clf), ("OvO", ovo_clf)]):
+    y_pred = clf.predict(X_test_scaled)
+    cm = confusion_matrix(y_test, y_pred)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[idx],
+                xticklabels=range(10), yticklabels=range(10))
+    axes[idx].set_title(f'Matrice de Confusion - {name}')
+    axes[idx].set_ylabel('Vraie Classe')
+    axes[idx].set_xlabel('Prédiction')
+plt.tight_layout()
+plt.show()
+
+### Exercice 5.2: Optimisation avec GridSearchCV
+
+# GridSearch pour SVM avec paramètres optimaux
+param_grid = {
+    'C': [0.1, 1, 10, 100],
+    'gamma': ['scale', 'auto', 0.001, 0.01, 0.1],
+    'kernel': ['rbf', 'linear', 'poly']
+}
+
+grid_search_svm = GridSearchCV(
+    SVC(random_state=42),
+    param_grid,
+    cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=42),
+    scoring='accuracy',
+    n_jobs=-1,
+    verbose=1
+)
+
+print("\nOptimisation SVM avec GridSearchCV...")
+grid_search_svm.fit(X_train_scaled, y_train)
+
+print(f"\nMeilleurs paramètres: {grid_search_svm.best_params_}")
+print(f"Meilleur score CV: {grid_search_svm.best_score_:.4f}")
+
+# Test avec le meilleur modèle
+best_svm = grid_search_svm.best_estimator_
+y_pred_svm = best_svm.predict(X_test_scaled)
+test_accuracy = accuracy_score(y_test, y_pred_svm)
+print(f"Accuracy sur test: {test_accuracy:.4f}")
+
+### Exercice 5.3: Comparaison finale
+
+# Test de plusieurs algorithmes sans optimisation exhaustive
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+
+models = {
+    "SVM (RBF)": SVC(kernel='rbf', C=10, gamma='scale', random_state=42),
+    "SVM (Linear)": SVC(kernel='linear', C=1, random_state=42),
+    "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
+    "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
+    "k-NN": KNeighborsClassifier(n_neighbors=3),
+    "Decision Tree": DecisionTreeClassifier(max_depth=10, random_state=42),
+    "Gaussian NB": GaussianNB()
+}
+
+results = []
+for name, model in models.items():
+    # Entraînement
+    model.fit(X_train_scaled if name not in ['Random Forest', 'Decision Tree'] else X_train, 
+              y_train)
+    
+    # Prédiction
+    X_te = X_test_scaled if name not in ['Random Forest', 'Decision Tree'] else X_test
+    y_pred = model.predict(X_te)
+    
+    # Métriques
+    acc = accuracy_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred, average='weighted')
+    results.append({
+        'Modèle': name,
+        'Accuracy': acc,
+        'F1-Score': f1
+    })
+
+# Affichage des résultats
+df_comparison = pd.DataFrame(results).sort_values('Accuracy', ascending=False)
+print("\n" + "="*60)
+print("COMPARAISON DES ALGORITHMES SUR DIGITS")
+print("="*60)
+print(df_comparison.to_string(index=False))
+
+# Visualisation
+plt.figure(figsize=(10, 6))
+bars = plt.barh(range(len(df_comparison)), df_comparison['Accuracy'], color='steelblue')
+plt.yticks(range(len(df_comparison)), df_comparison['Modèle'])
+plt.xlabel('Accuracy')
+plt.title('Performance des Algorithmes sur Digits Dataset')
+plt.xlim([0.85, 1.0])
+plt.grid(axis='x', alpha=0.3)
+
+# Ajouter les valeurs sur les barres
+for i, bar in enumerate(bars):
+    width = bar.get_width()
+    plt.text(width + 0.005, bar.get_y() + bar.get_height()/2, 
+             f'{width:.3f}', ha='left', va='center')
+
+plt.tight_layout()
+plt.show()
+
+## 6. Conclusion
+
+print("\n" + "="*80)
+print("CONCLUSION DU TP")
+print("="*80)
+
+print("\nRécapitulatif des points clés abordés:")
+print("1. ✅ Classification Multi-classes: OvR vs OvO")
+print("2. ✅ Optimisation hyperparamètres: GridSearchCV et RandomizedSearchCV")
+print("3. ✅ Validation croisée stratifiée (important pour classes déséquilibrées)")
+print("4. ✅ Comparaison systématique d'algorithmes")
+print("5. ✅ Application sur deux datasets: Iris (facile) et Digits (plus complexe)")
+
+print("\nRecommandations générales:")
+print("- Pour problèmes multi-classes: privilégier les algorithmes natifs ou OvR")
+print("- Pour optimisation: RandomizedSearchCV pour grands espaces, GridSearchCV sinon")
+print("- Toujours utiliser validation croisée pour éviter le sur-ajustement")
+print("- Comparer plusieurs algorithmes avant de choisir le meilleur")
+
+print("\nPour aller plus loin:")
+print("- Essayer d'autres datasets (fashion-MNIST, CIFAR-10)")
+print("- Explorer les méthodes d'ensembling (Stacking, Voting)")
+print("- Utiliser des techniques de réduction de dimension (PCA, t-SNE) pour la visualisation")
+print("- Implémenter un réseau de neurones pour la reconnaissance de chiffres")
+
+print("\n" + "="*80)
+print("FIN DU TP - CLASSIFICATION MULTI-CLASSES & OPTIMISATION")
+print("="*80)
+```

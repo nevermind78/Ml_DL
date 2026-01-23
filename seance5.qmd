@@ -1,0 +1,1220 @@
+# Séance 5: TD2 - Critères d'Évaluation
+
+::: {.callout-note icon=false}
+## Informations de la séance
+- **Type**: Travaux Dirigés
+- **Durée**: 2h
+- **Objectifs**: Obj4
+:::
+
+## Introduction
+
+L'évaluation correcte d'un modèle de classification est cruciale. Choisir la mauvaise métrique peut conduire à des conclusions erronées et à des modèles inadaptés en production. Dans ce TD, nous allons explorer en profondeur les différentes métriques d'évaluation.
+
+## 1. La Matrice de Confusion
+
+### 1.1 Définition et Structure
+
+La **matrice de confusion** est un tableau qui visualise les performances d'un modèle de classification en comparant les prédictions aux vraies valeurs.
+
+Pour un problème **binaire**:
+
+```
+                    Prédiction
+                 Négatif  Positif
+Réalité  Négatif    TN       FP
+         Positif    FN       TP
+```
+
+Où:
+
+- **TP (True Positive)**: Vrais Positifs - correctement classifiés comme positifs
+- **TN (True Negative)**: Vrais Négatifs - correctement classifiés comme négatifs
+- **FP (False Positive)**: Faux Positifs - incorrectement classifiés comme positifs (Erreur Type I)
+- **FN (False Negative)**: Faux Négatifs - incorrectement classifiés comme négatifs (Erreur Type II)
+
+::: {.callout-tip}
+## Mnémotechnique
+- **Type I (FP)**: Fausse alarme - "On crie au loup alors qu'il n'y a pas de loup"
+- **Type II (FN)**: Manque - "On ne voit pas le loup alors qu'il est là"
+:::
+
+### 1.2 Exemple Concret: Détection de Maladie
+
+Considérez un test médical pour une maladie:
+
+| Patient | Vraie Classe | Prédiction | Résultat |
+|---------|--------------|------------|----------|
+| 1 | Malade | Malade | TP $\checkmark$ |
+| 2 | Malade | Sain | FN X (Dangereux!) |
+| 3 | Sain | Malade | FP X (Fausse alarme) |
+| 4 | Sain | Sain | TN $\checkmark$ |
+| 5 | Malade | Malade | TP $\checkmark$ |
+| 6 | Sain | Sain | TN $\checkmark$ |
+| 7 | Malade | Sain | FN X (Dangereux!) |
+| 8 | Sain | Malade | FP X (Fausse alarme) |
+
+Matrice de confusion:
+
+```
+              Prédiction
+           Sain  Malade
+Réalité Sain   2      2      (4 sains)
+      Malade   2      2      (4 malades)
+```
+
+- **TP = 2**: Malades correctement détectés
+- **TN = 2**: Sains correctement identifiés
+- **FP = 2**: Sains diagnostiqués malades (traitement inutile)
+- **FN = 2**: Malades non détectés (très dangereux!)
+
+### Exercice 1.1: Construction de Matrice de Confusion
+
+Soit les prédictions suivantes pour un détecteur de spam (1 = Spam, 0 = Ham):
+
+```python
+y_true = [1, 0, 1, 1, 0, 1, 0, 0, 1, 0]
+y_pred = [1, 0, 1, 0, 0, 1, 0, 1, 1, 0]
+```
+
+**Questions:**
+1. Construisez la matrice de confusion
+2. Calculez TP, TN, FP, FN
+3. Interprétez chaque type d'erreur dans ce contexte
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 1.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import numpy as np
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+y_true = np.array([1, 0, 1, 1, 0, 1, 0, 0, 1, 0])
+y_pred = np.array([1, 0, 1, 0, 0, 1, 0, 1, 1, 0])
+
+# 1. Matrice de confusion
+cm = confusion_matrix(y_true, y_pred)
+print("1. Matrice de Confusion:")
+print(cm)
+
+# Visualisation
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=['Ham (0)', 'Spam (1)'],
+            yticklabels=['Ham (0)', 'Spam (1)'])
+plt.ylabel('Vraie Classe')
+plt.xlabel('Prédiction')
+plt.title('Matrice de Confusion - Détection de Spam')
+plt.tight_layout()
+plt.show()
+
+# 2. Calcul manuel
+tn, fp, fn, tp = cm.ravel()
+print(f"\n2. Valeurs:")
+print(f"TP (Vrais Positifs) = {tp}")
+print(f"TN (Vrais Négatifs) = {tn}")
+print(f"FP (Faux Positifs) = {fp}")
+print(f"FN (Faux Négatifs) = {fn}")
+
+# Vérification manuelle
+print("\n3. Interprétation:")
+print(f"TP = {tp}: Spams correctement détectés")
+print(f"TN = {tn}: Hams correctement identifiés")
+print(f"FP = {fp}: Hams classés comme spam (vont en indésirables)")
+print(f"FN = {fn}: Spams non détectés (arrivent en boîte de réception)")
+
+# Analyse détaillée
+print("\nAnalyse détaillée des prédictions:")
+for i, (true, pred) in enumerate(zip(y_true, y_pred)):
+    status = ""
+    if true == 1 and pred == 1:
+        status = "TP $\checkmark$"
+    elif true == 0 and pred == 0:
+        status = "TN $\checkmark$"
+    elif true == 0 and pred == 1:
+        status = "FP X"
+    elif true == 1 and pred == 0:
+        status = "FN X"
+    
+    true_label = "Spam" if true == 1 else "Ham"
+    pred_label = "Spam" if pred == 1 else "Ham"
+    print(f"Email {i+1}: Vrai={true_label}, Prédit={pred_label} → {status}")
+```
+
+**Réponses:**
+
+1. Matrice: `[[4, 1], [1, 4]]`
+2. TP=4, TN=4, FP=1, FN=1
+3. Interprétation:
+
+   - **FP (1 email)**: Email légitime envoyé dans spam (utilisateur peut manquer info importante)
+   - **FN (1 email)**: Spam non détecté dans boîte réception (nuisance mineure)
+:::
+
+## 2. Métriques Dérivées
+
+### 2.1 Accuracy (Exactitude)
+
+**Définition**: Proportion de prédictions correctes
+
+$$\text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}$$
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import accuracy_score
+
+accuracy = accuracy_score(y_true, y_pred)
+# ou manuellement:
+accuracy = (tp + tn) / (tp + tn + fp + fn)
+```
+
+::: {.callout-warning}
+## Piège de l'Accuracy!
+
+L'accuracy peut être **trompeuse** avec des classes déséquilibrées!
+
+**Exemple**: Détection de fraude
+
+- 990 transactions légitimes, 10 frauduleuses
+- Modèle naïf qui prédit toujours "légitime"
+- Accuracy = 990/1000 = **99%** 
+- Mais 0% de fraudes détectées!
+:::
+
+### 2.2 Precision (Précision)
+
+**Définition**: Proportion de prédictions positives qui sont correctes
+
+$$\text{Precision} = \frac{TP}{TP + FP}$$
+
+**Question répondue**: "Parmi tous les cas prédits positifs, combien le sont vraiment?"
+
+**Interprétation**:
+
+- Haute précision → Peu de faux positifs
+- Important quand le coût d'un FP est élevé
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import precision_score
+
+precision = precision_score(y_true, y_pred)
+# ou manuellement:
+precision = tp / (tp + fp)
+```
+
+**Exemples où la Precision est cruciale**:
+
+1. **Recommandation de produits**: Ne pas recommander des produits non pertinents
+2. **Filtrage spam**: Ne pas mettre d'emails importants dans spam
+3. **Détection de visages**: Ne pas identifier de faux visages
+
+### 2.3 Recall (Rappel) ou Sensitivity (Sensibilité)
+
+**Définition**: Proportion de vrais positifs correctement identifiés
+
+$$\text{Recall} = \frac{TP}{TP + FN}$$
+
+**Question répondue**: "Parmi tous les cas réellement positifs, combien ai-je détectés?"
+
+**Interprétation**:
+- Haut recall → Peu de faux négatifs
+- Important quand le coût d'un FN est élevé
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import recall_score
+
+recall = recall_score(y_true, y_pred)
+# ou manuellement:
+recall = tp / (tp + fn)
+```
+
+**Exemples où le Recall est crucial**:
+
+1. **Détection de cancer**: Ne manquer aucun malade
+2. **Détection de fraude**: Détecter toutes les fraudes
+3. **Systèmes de sécurité**: Ne rater aucune menace
+
+### 2.4 Compromis Precision-Recall
+
+Il existe généralement un **compromis** entre Precision et Recall:
+
+
+**Diagramme mermaid (conversion échouée):**
+```
+graph LR
+    A[Seuil bas<br/>0.3] --> B[Haute Recall<br/>Basse Precision]
+    C[Seuil moyen<br/>0.5]...
+```
+
+
+**Exemple concret**:
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Modèle de détection de maladie
+# Proba patient malade: 0.6
+
+# Seuil = 0.5: Prédit malade → Haute recall
+# Seuil = 0.8: Prédit sain → Haute precision (mais manque des cas)
+```
+
+### 2.5 F1-Score
+
+**Définition**: Moyenne harmonique de Precision et Recall
+
+$$F_1 = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$$
+
+**Pourquoi moyenne harmonique?**
+
+- Pénalise les déséquilibres
+- Si Precision=100% et Recall=1%, F1 $\approx$ 2% (pas 50.5%)
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import f1_score
+
+f1 = f1_score(y_true, y_pred)
+# ou manuellement:
+f1 = 2 * (precision * recall) / (precision + recall)
+```
+
+**Quand utiliser F1?**
+- Besoin d'équilibre entre Precision et Recall
+- Classes déséquilibrées
+- Vouloir une seule métrique résumée
+
+### 2.6 Autres Métriques
+
+**Specificity (Spécificité)**:
+
+$$\text{Specificity} = \frac{TN}{TN + FP}$$
+Proportion de vrais négatifs correctement identifiés
+
+**F-Beta Score**:
+
+$$F_\beta = (1 + \beta^2) \times \frac{\text{Precision} \times \text{Recall}}{\beta^2 \times \text{Precision} + \text{Recall}}$$
+
+- $\beta > 1$: Favorise le Recall
+- $\beta < 1$: Favorise la Precision
+
+### Exercice 2.1: Calcul de Métriques
+
+Soit la matrice de confusion suivante pour un détecteur de tumeurs malignes:
+
+```
+              Prédiction
+           Bénigne  Maligne
+Réalité Bénigne    850      50
+       Maligne     20       80
+```
+
+**Questions:**
+
+1. Calculez Accuracy, Precision, Recall, F1-Score
+2. Quelle métrique est la plus importante dans ce contexte? Pourquoi?
+3. Le modèle est-il satisfaisant? Justifiez.
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 2.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import numpy as np
+
+# Matrice de confusion
+#          Bénigne  Maligne
+# Bénigne    850      50
+# Maligne     20      80
+
+tn = 850  # Bénigne correctement identifié
+fp = 50   # Bénigne prédit Maligne
+fn = 20   # Maligne prédit Bénigne
+tp = 80   # Maligne correctement identifié
+
+total = tn + fp + fn + tp
+
+# 1. Calcul des métriques
+accuracy = (tp + tn) / total
+precision = tp / (tp + fp)
+recall = tp / (tp + fn)
+f1 = 2 * (precision * recall) / (precision + recall)
+specificity = tn / (tn + fp)
+
+print("1. Métriques calculées:")
+print(f"Accuracy:    {accuracy:.4f} ({accuracy*100:.2f}%)")
+print(f"Precision:   {precision:.4f} ({precision*100:.2f}%)")
+print(f"Recall:      {recall:.4f} ({recall*100:.2f}%)")
+print(f"F1-Score:    {f1:.4f} ({f1*100:.2f}%)")
+print(f"Specificity: {specificity:.4f} ({specificity*100:.2f}%)")
+
+# 2. Métrique la plus importante
+print("\n2. Métrique la plus importante: RECALL")
+print("   Raison: En médical, ne pas détecter un cancer (FN) est")
+print("   beaucoup plus grave qu'une fausse alarme (FP).")
+print(f"   Actuellement, Recall = {recall:.2%} signifie que")
+print(f"   {fn} cancers sur {tp+fn} ne sont pas détectés!")
+
+# 3. Évaluation
+print("\n3. Évaluation du modèle:")
+print(f"   X Recall de {recall:.2%} est INSUFFISANT")
+print(f"   X 20% de cancers manqués = inacceptable")
+print(f"   $\checkmark$ Precision de {precision:.2%} est correcte")
+print(f"   $\checkmark$ Specificity de {specificity:.2%} est bonne")
+print("\n   CONCLUSION: Modèle à améliorer!")
+print("   Recommandation: Abaisser le seuil de décision pour")
+print("   augmenter le Recall, même au prix de la Precision.")
+
+# Impact en nombre de patients
+print(f"\nImpact sur 1000 patients:")
+print(f"   - 20 cancers NON DÉTECTÉS (FN) ← CRITIQUE")
+print(f"   - 50 fausses alarmes (FP) ← Acceptable (examens complémentaires)")
+```
+
+**Réponses:**
+
+1. **Métriques:**
+   - Accuracy: 93.00%
+   - Precision: 61.54%
+   - Recall: 80.00%
+   - F1-Score: 69.57%
+   - Specificity: 94.44%
+
+2. **Métrique importante: RECALL**
+   - Un cancer non détecté (FN) peut être mortel
+   - Une fausse alarme (FP) → examens supplémentaires (acceptable)
+   - Donc: mieux vaut trop détecter que pas assez
+
+3. **Évaluation:**
+   - X Recall de 80% **insuffisant** (20% de cancers manqués)
+   - $\checkmark$ Specificity correcte
+   - **Conclusion**: Modèle dangereux en l'état
+   - **Action**: Réduire le seuil pour augmenter Recall
+:::
+
+## 3. Courbe ROC et AUC
+
+### 3.1 Courbe ROC (Receiver Operating Characteristic)
+
+La **courbe ROC** visualise les performances d'un classificateur binaire en variant le seuil de décision.
+
+**Axes:**
+
+- **X**: False Positive Rate (FPR) = $\frac{FP}{FP + TN}$ = 1 - Specificity
+- **Y**: True Positive Rate (TPR) = $\frac{TP}{TP + FN}$ = Recall
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import roc_curve, roc_auc_score
+import matplotlib.pyplot as plt
+
+# Obtenir les probabilités (pas les classes)
+y_proba = model.predict_proba(X_test)[:, 1]
+
+# Calculer les points de la courbe ROC
+fpr, tpr, thresholds = roc_curve(y_test, y_proba)
+
+# Tracer la courbe
+plt.figure(figsize=(10, 6))
+plt.plot(fpr, tpr, linewidth=2, label='ROC Curve')
+plt.plot([0, 1], [0, 1], 'k--', label='Random (AUC=0.5)')
+plt.xlabel('False Positive Rate (1 - Specificity)')
+plt.ylabel('True Positive Rate (Recall)')
+plt.title('Courbe ROC')
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+**Interprétation des points:**
+
+- **Point (0, 0)**: Tout prédit négatif (seuil = 1.0)
+- **Point (1, 1)**: Tout prédit positif (seuil = 0.0)
+- **Point (0, 1)**: Classificateur parfait
+- **Diagonale**: Classificateur aléatoire
+
+### 3.2 AUC (Area Under Curve)
+
+L'**AUC** est l'aire sous la courbe ROC.
+
+**Interprétation:**
+
+- **AUC = 1.0**: Classificateur parfait
+- **AUC = 0.9 - 1.0**: Excellent
+- **AUC = 0.8 - 0.9**: Très bon
+- **AUC = 0.7 - 0.8**: Bon
+- **AUC = 0.6 - 0.7**: Médiocre
+- **AUC = 0.5**: Aléatoire (inutile)
+- **AUC < 0.5**: Pire qu'aléatoire (inverser les prédictions!)
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Calcul de l'AUC
+auc = roc_auc_score(y_test, y_proba)
+print(f"AUC Score: {auc:.4f}")
+```
+
+**Avantages de l'AUC:**
+
+- Indépendant du seuil de décision
+- Robuste aux classes déséquilibrées
+- Facile à interpréter (une seule valeur)
+
+**Signification probabiliste:**
+
+AUC = probabilité qu'un exemple positif aléatoire ait un score plus élevé qu'un exemple négatif aléatoire
+
+### Exercice 3.1: Analyse de Courbe ROC
+
+Vous avez trois modèles avec les AUC suivants:
+
+- Modèle A: AUC = 0.95
+- Modèle B: AUC = 0.75
+- Modèle C: AUC = 0.52
+
+**Questions:**
+
+1. Classez les modèles par performance
+2. Quel modèle choisiriez-vous pour détecter des fraudes bancaires?
+3. Dans quel cas le Modèle C pourrait-il être utile?
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 3.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Simulation de courbes ROC
+np.random.seed(42)
+
+# Modèle A (excellent)
+fpr_a = np.linspace(0, 1, 100)
+tpr_a = np.power(fpr_a, 0.2)  # Courbe très au-dessus de la diagonale
+
+# Modèle B (bon)
+fpr_b = np.linspace(0, 1, 100)
+tpr_b = np.power(fpr_b, 0.6)
+
+# Modèle C (quasi-aléatoire)
+fpr_c = np.linspace(0, 1, 100)
+tpr_c = fpr_c + np.random.normal(0, 0.05, 100)
+tpr_c = np.clip(tpr_c, 0, 1)
+
+# Visualisation
+plt.figure(figsize=(10, 8))
+plt.plot(fpr_a, tpr_a, linewidth=2, label=f'Modèle A (AUC=0.95)')
+plt.plot(fpr_b, tpr_b, linewidth=2, label=f'Modèle B (AUC=0.75)')
+plt.plot(fpr_c, tpr_c, linewidth=2, label=f'Modèle C (AUC=0.52)')
+plt.plot([0, 1], [0, 1], 'k--', linewidth=1, label='Aléatoire (AUC=0.5)')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Comparaison des Courbes ROC')
+plt.legend()
+plt.grid(alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+print("1. Classement par performance:")
+print("   1er: Modèle A (AUC=0.95) - Excellent")
+print("   2e:  Modèle B (AUC=0.75) - Bon")
+print("   3e:  Modèle C (AUC=0.52) - Quasi-aléatoire")
+
+print("\n2. Pour détecter des fraudes:")
+print("   → Modèle A (AUC=0.95)")
+print("   Raison: Meilleure capacité à distinguer fraude/légitime")
+print("   Permet d'ajuster le seuil selon coût FP vs FN")
+
+print("\n3. Utilité du Modèle C:")
+print("   → Quasiment aucune!")
+print("   AUC=0.52 $\approx$ tirage à pile ou face")
+print("   SAUF: Si on inverse ses prédictions → AUC=0.48")
+print("   → Peut indiquer un bug dans le code/labels")
+```
+
+**Réponses:**
+
+1. **Classement**: A > B > C
+
+   - A est excellent
+   - B est bon mais moins performant
+   - C est pratiquement inutile
+
+2. **Fraude bancaire: Modèle A**
+
+   - AUC élevé = meilleure discrimination
+   - Important car coûts élevés (fraudes manquées + fausses alarmes)
+   - Permet de choisir le seuil optimal selon les coûts métier
+
+3. **Utilité de C:**
+
+   - Pratiquement aucune (performance aléatoire)
+   - Pourrait indiquer un problème (bug, labels inversés, features non pertinentes)
+   - Si AUC < 0.5: inverser les prédictions pourrait aider!
+:::
+
+## 4. Choix de Métriques selon le Contexte
+
+### 4.1 Tableau de Décision
+
+| Contexte | Métrique Principale | Raison |
+|----------|-------------------|---------|
+| **Détection de spam** | Precision | Éviter de perdre emails importants (FP coûteux) |
+| **Détection de cancer** | Recall | Ne manquer aucun malade (FN critique) |
+| **Moteur de recherche** | Precision@K | Premiers résultats doivent être pertinents |
+| **Fraude bancaire** | F1 ou AUC | Équilibre entre détecter fraudes et éviter fausses alarmes |
+| **Système de recommandation** | Precision | Recommandations doivent être pertinentes |
+| **Détection d'intrusion réseau** | Recall | Ne rater aucune attaque (FN dangereux) |
+| **Diagnostic automatisé** | Recall + Precision | Les deux sont importants (vies humaines) |
+
+### 4.2 Classes Déséquilibrées
+
+Lorsque les classes sont **très déséquilibrées** (ex: 1% positifs, 99% négatifs):
+
+**❌ À ÉVITER:**
+
+- Accuracy (trompeuse)
+
+**✅ À UTILISER:**
+
+- Precision, Recall, F1-Score
+- AUC-ROC
+- Precision-Recall curve
+- Balanced Accuracy = $\frac{\text{Recall} + \text{Specificity}}{2}$
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import balanced_accuracy_score
+
+# Accuracy normale (biaisée si déséquilibre)
+acc = accuracy_score(y_true, y_pred)
+
+# Balanced accuracy (moyenne de recall et specificity)
+balanced_acc = balanced_accuracy_score(y_true, y_pred)
+
+print(f"Accuracy: {acc:.4f}")
+print(f"Balanced Accuracy: {balanced_acc:.4f}")
+```
+
+### Exercice 4.1: Choix de Métrique
+
+Pour chaque scénario, choisissez la métrique la plus appropriée et justifiez:
+
+1. **Système de reconnaissance faciale pour déverrouillage de téléphone**
+2. **Filtre anti-spam Gmail**
+3. **Détection de COVID-19 par test rapide**
+4. **Système de recommandation Netflix**
+5. **Détection de transactions frauduleuses (0.1% de fraudes)**
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 4.1
+
+**1. Reconnaissance faciale pour téléphone:**
+- **Métrique**: **Precision** (prioritaire) + FPR faible
+- **Justification**:
+
+  - FP = Personne non autorisée accède au téléphone (GRAVE - sécurité)
+  - FN = Propriétaire doit retenter (MINEUR - inconvénient)
+  - Mieux vaut bloquer le propriétaire parfois que laisser entrer un intrus
+
+**2. Filtre anti-spam Gmail:**
+
+- **Métrique**: **Precision** (prioritaire)
+- **Justification**:
+
+  - FP = Email important dans spam (GRAVE - peut manquer info critique)
+  - FN = Spam en boîte de réception (MINEUR - simple nuisance)
+  - Gmail préfère laisser passer du spam que bloquer des emails légitimes
+
+**3. Détection COVID-19:**
+
+- **Métrique**: **Recall** (prioritaire)
+- **Justification**:
+  - FN = Malade non détecté → propage le virus (GRAVE - santé publique)
+  - FP = Personne saine isolée inutilement (MINEUR - test confirmatoire possible)
+  - Mieux vaut trop détecter que pas assez
+
+**4. Recommandation Netflix:**
+
+- **Métrique**: **Precision@K** (K = nombre de recommandations affichées)
+- **Justification**:
+  - Utilisateur voit seulement les K premières recommandations
+  - Celles-ci doivent être pertinentes pour satisfaction client
+  - Recall moins important (on ne peut pas tout recommander)
+
+**5. Fraude bancaire (0.1% de fraudes):**
+
+- **Métriques**: **F1-Score** + **AUC-ROC** + **Precision-Recall curve**
+- **Justification**:
+
+  - Classes très déséquilibrées → Accuracy inutile
+  - FP = Client bloqué à tort (coûteux - insatisfaction)
+  - FN = Fraude non détectée (très coûteux - pertes financières)
+  - Besoin d'équilibre → F1 ou optimiser selon coûts métier
+  - AUC pour comparer modèles indépendamment du seuil
+:::
+
+## 5. Exercice Récapitulatif Complet
+
+### Scénario: Détecteur de Défauts en Usine
+
+Une usine produit 10,000 pièces par jour. En moyenne, 100 pièces (1%) sont défectueuses.
+
+Vous avez développé un modèle de détection automatique qui donne les résultats suivants sur 1000 pièces de test:
+
+```
+              Prédiction
+           OK    Défectueux
+Réalité OK    970      20
+     Défect.   3       7
+```
+
+**Coûts:**
+
+- Pièce défectueuse non détectée (FN): **500€** (vendue puis retournée par client)
+- Pièce OK rejetée à tort (FP): **10€** (inspection manuelle inutile)
+- Inspection manuelle d'une pièce: **5€**
+
+**Questions:**
+
+1. Calculez toutes les métriques (Accuracy, Precision, Recall, F1, Specificity)
+2. Le modèle est-il acceptable d'un point de vue métier?
+3. Calculez le coût total journalier des erreurs
+4. Quelle métrique devriez-vous optimiser en priorité?
+5. Proposez une amélioration du modèle
+
+::: {.callout-note collapse="true"}
+## Solution Exercice Récapitulatif
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Matrice de confusion
+#           OK    Défect
+# OK       970      20
+# Défect     3       7
+
+tn, fp = 970, 20
+fn, tp = 3, 7
+
+total = tn + fp + fn + tp
+
+print("=" * 60)
+print("ANALYSE DU DÉTECTEUR DE DÉFAUTS")
+print("=" * 60)
+
+# 1. Métriques
+print("\n1. MÉTRIQUES DE PERFORMANCE:")
+print("-" * 60)
+
+accuracy = (tp + tn) / total
+precision = tp / (tp + fp)
+recall = tp / (tp + fn)
+f1 = 2 * (precision * recall) / (precision + recall)
+specificity = tn / (tn + fp)
+fpr = fp / (fp + tn)
+fnr = fn / (fn + tp)
+
+metrics = {
+    'Accuracy': accuracy,
+    'Precision': precision,
+    'Recall': recall,
+    'F1-Score': f1,
+    'Specificity': specificity,
+    'False Positive Rate': fpr,
+    'False Negative Rate': fnr
+}
+
+for metric, value in metrics.items():
+    print(f"{metric:25s}: {value:.4f} ({value*100:6.2f}%)")
+
+# 2. Acceptabilité métier
+print("\n2. ACCEPTABILITÉ MÉTIER:")
+print("-" * 60)
+print(f"X Recall = {recall:.2%} est TRÈS FAIBLE")
+print(f"  → Sur 10 défauts, seulement {tp} détectés, {fn} manqués!")
+print(f"  → {fnr:.2%} de défauts passent inaperçus")
+print(f"\n$\checkmark$ Precision = {precision:.2%} est acceptable")
+print(f"  → Peu de fausses alarmes")
+print(f"\nX CONCLUSION: Modèle INACCEPTABLE")
+print(f"  → Trop de défauts non détectés atteignent les clients")
+
+# 3. Coût journalier
+print("\n3. COÛT TOTAL JOURNALIER:")
+print("-" * 60)
+
+# Extrapolation à 10,000 pièces
+total_pieces = 10000
+defect_rate = 0.01
+total_defects = int(total_pieces * defect_rate)  # 100 défauts
+total_ok = total_pieces - total_defects  # 9900 OK
+
+# Calcul des erreurs attendues
+expected_fn = int(total_defects * fnr)  # Défauts non détectés
+expected_fp = int(total_ok * fpr)  # OK rejetés à tort
+
+cout_fn = expected_fn * 500  # Défauts non détectés
+cout_fp = expected_fp * 10   # OK rejetés
+cout_inspection = (expected_fn + expected_fp) * 0  # Pas d'inspection pour erreurs
+
+cout_total = cout_fn + cout_fp
+
+print(f"Production journalière:     {total_pieces:,} pièces")
+print(f"Défauts réels:              {total_defects} pièces ({defect_rate:.1%})")
+print(f"\nErreurs attendues:")
+print(f"  - FN (défauts manqués):   {expected_fn} × 500€ = {cout_fn:,}€")
+print(f"  - FP (OK rejetés):        {expected_fp} × 10€  = {cout_fp:,}€")
+print(f"\nCoût total des erreurs:     {cout_total:,}€/jour")
+print(f"Coût mensuel (22 jours):    {cout_total*22:,}€/mois")
+print(f"Coût annuel (250 jours):    {cout_total*250:,}€/an")
+
+# 4. Métrique à optimiser
+print("\n4. MÉTRIQUE À OPTIMISER:")
+print("-" * 60)
+print("→ RECALL (priorité absolue)")
+print("\nRaison: Le coût d'un FN (500€) est 50× plus élevé")
+print("        que le coût d'un FP (10€)")
+print(f"\nRatio coût FN/FP: {500/10:.0f}:1")
+print("\nStratégie: Maximiser le Recall, même au prix de")
+print("           la Precision (plus de fausses alarmes acceptable)")
+
+# 5. Amélioration
+print("\n5. PROPOSITIONS D'AMÉLIORATION:")
+print("-" * 60)
+print("\nA. Court terme (ajustement du seuil):")
+print("   1. Abaisser le seuil de décision (ex: 0.5 → 0.2)")
+print("   2. Objectif: Recall > 90%")
+print("   3. Conséquence: Plus de FP (mais coût acceptable)")
+
+# Simulation avec recall amélioré
+recall_target = 0.90
+fn_new = int(total_defects * (1 - recall_target))  # 10 défauts manqués
+# Supposons que Precision baisse à 20%
+precision_new = 0.20
+fp_new = int((total_defects * recall_target) / precision_new * (1 - precision_new))
+
+cout_fn_new = fn_new * 500
+cout_fp_new = fp_new * 10
+cout_total_new = cout_fn_new + cout_fp_new
+
+print(f"\n   Simulation avec Recall=90%, Precision=20%:")
+print(f"   - FN: {fn_new} × 500€ = {cout_fn_new:,}€")
+print(f"   - FP: {fp_new} × 10€ = {cout_fp_new:,}€")
+print(f"   - Coût total: {cout_total_new:,}€/jour")
+print(f"   - Économie: {cout_total - cout_total_new:,}€/jour")
+print(f"   - ROI annuel: {(cout_total - cout_total_new)*250:,}€")
+
+print("\nB. Moyen terme (amélioration du modèle):")
+print("   1. Collecter plus de données (surtout défauts)")
+print("   2. Feature engineering (nouvelles caractéristiques)")
+print("   3. Essayer d'autres algorithmes (XGBoost, CNN)")
+print("   4. Data augmentation pour la classe minoritaire")
+
+print("\nC. Long terme (approche hybride):")
+print("   1. Modèle ML comme premier filtre (Recall élevé)")
+print("   2. Inspection manuelle des cas suspects")
+print("   3. Double vérification pour cas limites")
+
+# Visualisation
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Matrice de confusion
+cm = np.array([[tn, fp], [fn, tp]])
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0],
+            xticklabels=['OK', 'Défectueux'],
+            yticklabels=['OK', 'Défectueux'])
+axes[0].set_ylabel('Vraie Classe')
+axes[0].set_xlabel('Prédiction')
+axes[0].set_title('Matrice de Confusion')
+
+# Comparaison coûts
+scenarios = ['Modèle Actuel\n(Recall=70%)', 
+             'Modèle Amélioré\n(Recall=90%)']
+couts = [cout_total, cout_total_new]
+colors = ['#ff6b6b', '#51cf66']
+
+axes[1].bar(scenarios, couts, color=colors, alpha=0.7)
+axes[1].set_ylabel('Coût journalier (€)')
+axes[1].set_title('Comparaison des Coûts')
+axes[1].grid(axis='y', alpha=0.3)
+
+for i, (scenario, cout) in enumerate(zip(scenarios, couts)):
+    axes[1].text(i, cout + 100, f'{cout:,}€', 
+                ha='center', va='bottom', fontweight='bold')
+
+plt.tight_layout()
+plt.show()
+
+# Tableau récapitulatif
+print("\n" + "=" * 60)
+print("TABLEAU RÉCAPITULATIF")
+print("=" * 60)
+
+comparison = pd.DataFrame({
+    'Métrique': ['Recall', 'Precision', 'FN/jour', 'FP/jour', 'Coût/jour'],
+    'Actuel': [f'{recall:.1%}', f'{precision:.1%}', expected_fn, expected_fp, f'{cout_total:,}€'],
+    'Cible': ['90%', '20%', fn_new, fp_new, f'{cout_total_new:,}€'],
+    'Amélioration': ['↑ +20pp', '↓ -6pp', f'↓ -{expected_fn-fn_new}', f'↑ +{fp_new-expected_fp}', 
+                     f'↓ -{cout_total-cout_total_new:,}€']
+})
+
+print(comparison.to_string(index=False))
+print("=" * 60)
+```
+
+**Synthèse des réponses:**
+
+**1. Métriques:**
+
+- Accuracy: 97.70%
+- Precision: 25.93% (7 sur 27 prédictions de défauts sont correctes)
+- Recall: 70.00% (7 sur 10 vrais défauts détectés)
+- F1-Score: 38.89%
+- Specificity: 97.98%
+
+**2. Acceptabilité métier:**
+
+- ❌ **NON ACCEPTABLE**
+- Recall de 70% signifie 30% de défauts non détectés
+- Ces défauts atteignent les clients → réputation + coûts
+
+**3. Coût journalier:**
+
+- FN: 30 défauts × 500€ = **15,000€/jour**
+- FP: 200 pièces × 10€ = **2,000€/jour**
+- **Total: 17,000€/jour** ($\approx$ 4.25M€/an!)
+
+**4. Métrique à optimiser:**
+
+- **RECALL** (priorité absolue)
+- Ratio coût 50:1 en faveur de l'augmentation du Recall
+- Accepter plus de FP pour réduire FN
+
+**5. Amélioration proposée:**
+
+- Abaisser seuil → Recall 90%+
+- Économie potentielle: ~10,000€/jour
+- ROI annuel: ~2.5M€
+:::
+
+## 6. Comparaison Critique des Résultats
+
+### Exercice 6.1: Analyse Comparative
+
+Trois data scientists ont entraîné des modèles pour détecter des défaillances machines:
+
+| Modèle | Accuracy | Precision | Recall | F1 | AUC |
+|--------|----------|-----------|--------|----|----|
+| A | 98% | 40% | 95% | 56% | 0.92 |
+| B | 95% | 80% | 70% | 75% | 0.88 |
+| C | 99% | 20% | 60% | 30% | 0.75 |
+
+**Contexte:** 2% de défaillances, coût FN = 10,000€, coût FP = 100€
+
+**Questions:**
+1. Quel modèle recommandez-vous?
+2. Justifiez votre choix avec calculs de coûts
+3. Que révèle l'Accuracy élevée du modèle C?
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 6.1
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Données
+models_data = {
+    'Modèle': ['A', 'B', 'C'],
+    'Accuracy': [0.98, 0.95, 0.99],
+    'Precision': [0.40, 0.80, 0.20],
+    'Recall': [0.95, 0.70, 0.60],
+    'F1': [0.56, 0.75, 0.30],
+    'AUC': [0.92, 0.88, 0.75]
+}
+
+df_models = pd.DataFrame(models_data)
+
+# Contexte
+defect_rate = 0.02
+total_samples = 10000
+total_defects = int(total_samples * defect_rate)  # 200
+total_normal = total_samples - total_defects  # 9800
+
+cost_fn = 10000  # Coût défaillance non détectée
+cost_fp = 100    # Coût fausse alarme
+
+print("ANALYSE COMPARATIVE DES MODÈLES")
+print("=" * 70)
+
+# Calcul des coûts pour chaque modèle
+results = []
+
+for idx, row in df_models.iterrows():
+    model = row['Modèle']
+    recall = row['Recall']
+    precision = row['Precision']
+    
+    # Calcul des erreurs
+    fn = int(total_defects * (1 - recall))  # Défauts manqués
+    tp = total_defects - fn  # Défauts détectés
+    
+    # De precision = TP / (TP + FP), on déduit FP
+    if precision > 0:
+        fp = int(tp / precision - tp)  # Fausses alarmes
+    else:
+        fp = 0
+    
+    # Coûts
+    cost_fn_total = fn * cost_fn
+    cost_fp_total = fp * cost_fp
+    cost_total = cost_fn_total + cost_fp_total
+    
+    results.append({
+        'Modèle': model,
+        'FN': fn,
+        'FP': fp,
+        'Coût FN': cost_fn_total,
+        'Coût FP': cost_fp_total,
+        'Coût Total': cost_total
+    })
+    
+    print(f"\nModèle {model}:")
+    print(f"  Recall: {recall:.0%} → FN = {fn} défaillances manquées")
+    print(f"  Precision: {precision:.0%} → FP = {fp} fausses alarmes")
+    print(f"  Coût FN: {fn} × {cost_fn:,}€ = {cost_fn_total:,}€")
+    print(f"  Coût FP: {fp} × {cost_fp:,}€ = {cost_fp_total:,}€")
+    print(f"  COÛT TOTAL: {cost_total:,}€")
+
+df_results = pd.DataFrame(results)
+
+# Meilleur modèle
+best_model = df_results.loc[df_results['Coût Total'].idxmin()]
+
+print("\n" + "=" * 70)
+print("RECOMMANDATION")
+print("=" * 70)
+print(f"→ Modèle {best_model['Modèle']} (coût le plus faible)")
+print(f"\nJustification:")
+print(f"  - Coût total minimal: {best_model['Coût Total']:,}€")
+print(f"  - Recall élevé ({df_models[df_models['Modèle']==best_model['Modèle']]['Recall'].values[0]:.0%}) critique car FN très coûteux")
+print(f"  - Le surcoût en FP est négligeable comparé aux économies en FN")
+
+print("\n" + "=" * 70)
+print("ANALYSE DU MODÈLE C")
+print("=" * 70)
+print("Accuracy de 99% mais performances médiocres:")
+print("  → Piège des classes déséquilibrées!")
+print(f"  → Avec 2% de défauts, prédire 'normal' partout")
+print(f"     donnerait déjà 98% d'accuracy")
+print("  → Recall de 60% = 40% de défauts manqués (inacceptable)")
+print("  → AUC faible (0.75) confirme faible capacité discriminative")
+print("\n  Conclusion: Accuracy est une métrique TROMPEUSE ici!")
+
+# Visualisations
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+
+# Graphique 1: Comparaison des coûts
+x = df_results['Modèle']
+width = 0.35
+
+x_pos = range(len(x))
+axes[0].bar([p - width/2 for p in x_pos], df_results['Coût FN'], 
+           width, label='Coût FN', color='#ff6b6b', alpha=0.8)
+axes[0].bar([p + width/2 for p in x_pos], df_results['Coût FP'], 
+           width, label='Coût FP', color='#ffa94d', alpha=0.8)
+
+axes[0].set_xlabel('Modèle')
+axes[0].set_ylabel('Coût (€)')
+axes[0].set_title('Comparaison des Coûts par Type d\'Erreur')
+axes[0].set_xticks(x_pos)
+axes[0].set_xticklabels(x)
+axes[0].legend()
+axes[0].grid(axis='y', alpha=0.3)
+
+# Ajouter coût total
+for i, (idx, row) in enumerate(df_results.iterrows()):
+    total = row['Coût Total']
+    axes[0].text(i, total + 5000, f'{total:,}€', 
+                ha='center', fontweight='bold', fontsize=10)
+
+# Graphique 2: Radar chart des métriques
+from math import pi
+
+categories = ['Accuracy', 'Precision', 'Recall', 'F1', 'AUC']
+N = len(categories)
+
+angles = [n / float(N) * 2 * pi for n in range(N)]
+angles += angles[:1]
+
+ax = plt.subplot(122, projection='polar')
+
+for idx, row in df_models.iterrows():
+    values = [row['Accuracy'], row['Precision'], row['Recall'], 
+              row['F1'], row['AUC']]
+    values += values[:1]
+    
+    ax.plot(angles, values, 'o-', linewidth=2, label=f"Modèle {row['Modèle']}")
+    ax.fill(angles, values, alpha=0.15)
+
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(categories)
+ax.set_ylim(0, 1)
+ax.set_title('Comparaison Multidimensionnelle des Métriques', y=1.08)
+ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+ax.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+# Tableau final
+print("\n" + "=" * 70)
+print("TABLEAU RÉCAPITULATIF")
+print("=" * 70)
+print(df_results.to_string(index=False))
+```
+
+**Réponses:**
+
+1. **Modèle recommandé: A**
+
+2. **Justification avec coûts:**
+   - Modèle A: 10 FN × 10,000€ + 475 FP × 100€ = **147,500€**
+   - Modèle B: 60 FN × 10,000€ + 175 FP × 100€ = **617,500€**
+   - Modèle C: 80 FN × 10,000€ + 600 FP × 100€ = **860,000€**
+   
+   Le Modèle A minimise le coût total malgré plus de FP
+
+3. **Accuracy élevée du Modèle C:**
+   - Piège classique des classes déséquilibrées!
+   - 99% accuracy car prédit surtout "normal"
+   - Mais rate 40% des défaillances (Recall = 60%)
+   - **Leçon**: Accuracy seule est trompeuse avec déséquilibre
+:::
+
+## Résumé de la Séance
+
+::: {.callout-important icon=false}
+## Points clés à retenir
+
+### 1. Matrice de Confusion
+- Fondation de toutes les métriques
+- TP, TN, FP, FN à bien comprendre
+- Visualisation claire des erreurs
+
+### 2. Métriques Principales
+- **Accuracy**: % correct (attention au déséquilibre!)
+- **Precision**: Fiabilité des prédictions positives
+- **Recall**: Couverture des vrais positifs
+- **F1-Score**: Équilibre Precision-Recall
+
+### 3. Compromis
+- Precision ↑ → Recall ↓ (généralement)
+- Choix selon le coût des erreurs
+- Ajustement du seuil de décision
+
+### 4. Courbe ROC et AUC
+- Évaluation indépendante du seuil
+- AUC = mesure globale de discrimination
+- Comparaison facile de modèles
+
+### 5. Choix Contextuel
+- **Pas de métrique universelle!**
+- Dépend du problème métier
+- Considérer les coûts réels des erreurs
+- Classes déséquilibrées → éviter Accuracy seule
+
+### 6. Règles d'Or
+1. Toujours regarder plusieurs métriques
+2. Privilégier Recall si FN coûteux
+3. Privilégier Precision si FP coûteux
+4. Utiliser AUC pour comparer modèles
+5. Valider avec coûts métier réels
+:::
+
+## Checklist de Maîtrise
+
+- [ ] Je sais construire et interpréter une matrice de confusion
+- [ ] Je comprends la différence entre Precision et Recall
+- [ ] Je peux expliquer pourquoi Accuracy peut être trompeuse
+- [ ] Je sais calculer manuellement les métriques de base
+- [ ] Je comprends le compromis Precision-Recall
+- [ ] Je sais interpréter une courbe ROC et l'AUC
+- [ ] Je peux choisir la métrique appropriée selon le contexte
+- [ ] Je comprends l'impact des classes déséquilibrées
+
+## Exercices Supplémentaires
+
+::: {.callout-warning icon=false}
+## Pour s'entraîner
+
+1. **Implémentez** toutes les métriques vues en Python sans Scikit-learn
+2. **Créez** une fonction qui recommande la meilleure métrique selon le contexte
+3. **Analysez** un dataset déséquilibré (ex: fraude, maladie rare) sur Kaggle
+4. **Comparez** plusieurs modèles sur le même problème avec toutes les métriques
+5. **Explorez** l'effet du seuil de décision sur Precision et Recall
+:::
+
+## Préparation Séance Suivante
+
+La **Séance 6 (TP2)** abordera:
+
+- Classification multi-classes
+- Optimisation d'hyperparamètres (GridSearchCV, RandomizedSearchCV)
+- Validation croisée
+- Comparaison avancée de modèles
+
+**À préparer:**
+
+- Relire les concepts de validation croisée
+- Installer scikit-learn à jour
+- Réfléchir aux hyperparamètres importants de chaque algorithme
+
+## Ressources Complémentaires
+
+1. [Scikit-learn: Model Evaluation](https://scikit-learn.org/stable/modules/model_evaluation.html)
+2. [Google ML Crash Course: Classification](https://developers.google.com/machine-learning/crash-course/classification)
+3. [StatQuest: Sensitivity and Specificity](https://www.youtube.com/watch?v=vP06aMoz4v8)
+4. [Towards Data Science: Beyond Accuracy](https://towardsdatascience.com/beyond-accuracy-precision-and-recall-3da06bea9f6c)

@@ -1,0 +1,668 @@
+# Séance 7: Cours - Apprentissage Supervisé : Régression
+
+::: {.callout-note icon=false}
+## Informations de la séance
+- **Type**: Cours
+- **Durée**: 2h
+- **Objectifs**: Obj5, Obj6
+:::
+
+## Introduction
+
+La **régression** est une tâche d'apprentissage supervisé qui vise à prédire une **valeur continue** (quantitative) à partir de features. Contrairement à la classification qui prédit des catégories discrètes, la régression prédit des nombres réels.
+
+**Exemples d'applications:**
+
+- Prédire le prix d'une maison
+- Estimer la consommation d'énergie
+- Prévoir les ventes futures
+- Évaluer le risque de crédit (montant)
+- Prédire la température
+
+## 1. Régression vs Classification
+
+### 1.1 Différences Fondamentales
+
+| Aspect | Classification | Régression |
+|--------|---------------|------------|
+| **Variable cible** | Discrète/Catégorielle | Continue/Numérique |
+| **Sortie** | Classe ou probabilité | Valeur réelle |
+| **Exemples** | Spam/Ham, Chien/Chat | Prix, Température |
+| **Métriques** | Accuracy, Precision, Recall | MAE, MSE, R² |
+| **Fonction de coût** | Cross-Entropy | MSE, MAE |
+
+### 1.2 Exemple Illustratif
+
+```python
+# Classification
+X = [[3, 2], [4, 3], [1, 1], [2, 1]]
+y = [0, 0, 1, 1]  # Classes: 0 ou 1
+# Prédiction: classe 0 ou 1
+
+# Régression  
+X = [[1500], [2000], [2500], [3000]]  # Surface en m²
+y = [200000, 280000, 350000, 420000]  # Prix en €
+# Prédiction: prix continu (ex: 315,750€)
+```
+
+::: {.callout-tip}
+## Comment choisir?
+
+**Utilisez la Classification si:**
+
+- Réponse = Catégorie ("Oui/Non", "Rouge/Vert/Bleu")
+- Objectif = Classer, identifier, détecter
+
+**Utilisez la Régression si:**
+
+- Réponse = Nombre ("125.5", "3.14")
+- Objectif = Prédire une quantité, estimer
+:::
+
+## 2. Régression Linéaire: Fondements Théoriques
+
+### 2.1 Régression Linéaire Simple
+
+**Objectif:** Modéliser la relation entre une variable explicative $x$ et une variable cible $y$
+
+**Équation:**
+$$y = \beta_0 + \beta_1 x + \epsilon$$
+
+Où:
+
+- $y$ : variable à prédire (variable dépendante)
+- $x$ : variable explicative (variable indépendante)
+- $\beta_0$ : ordonnée à l'origine (intercept)
+- $\beta_1$ : pente (coefficient)
+- $\epsilon$ : terme d'erreur
+
+**Objectif d'apprentissage:** Trouver $\beta_0$ et $\beta_1$ qui minimisent l'erreur
+
+### 2.2 Régression Linéaire Multiple
+
+**Équation générale avec p features:**
+$$y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_p x_p + \epsilon$$
+
+**Forme matricielle:**
+$$\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}$$
+
+Où:
+
+- $\mathbf{y}$ : vecteur des valeurs cibles (n × 1)
+- $\mathbf{X}$ : matrice des features (n × p)
+- $\boldsymbol{\beta}$ : vecteur des coefficients (p × 1)
+- $\boldsymbol{\epsilon}$ : vecteur des erreurs (n × 1)
+
+### 2.3 Fonction de Coût: Mean Squared Error (MSE)
+
+**Définition:**
+$$\text{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2$$
+
+Où:
+
+- $y_i$ : vraie valeur
+- $\hat{y}_i = \mathbf{x}_i^T\boldsymbol{\beta}$ : prédiction
+- $n$ : nombre d'exemples
+
+**Pourquoi le carré?**
+
+- Pénalise davantage les grandes erreurs
+- Différentiable partout (facilite l'optimisation)
+- Correspond à la vraisemblance gaussienne
+
+### 2.4 Solution Analytique: Équation Normale
+
+Pour minimiser MSE, on peut dériver et résoudre:
+
+$$\boldsymbol{\beta} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y}$$
+
+**Avantages:**
+
+- Solution exacte en une étape
+- Pas besoin de réglage d'hyperparamètres
+
+**Inconvénients:**
+
+- Coût computationnel: $O(p^3)$ (inversion de matrice)
+- Problème si $\mathbf{X}^T\mathbf{X}$ non inversible (colinéarité)
+- Impraticable pour grands datasets
+
+### 2.5 Implémentation en Python
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Génération de données
+np.random.seed(42)
+X = np.random.rand(100, 1) * 10
+y = 3 + 2 * X + np.random.randn(100, 1) * 2  # y = 3 + 2x + bruit
+
+# Split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Modèle
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Prédictions
+y_pred = model.predict(X_test)
+
+# Coefficients
+print(f"Intercept (beta0): {model.intercept_[0]:.2f}")
+print(f"Coefficient (beta1): {model.coef_[0][0]:.2f}")
+print(f"MSE: {mean_squared_error(y_test, y_pred):.2f}")
+print(f"R²: {r2_score(y_test, y_pred):.4f}")
+
+# Visualisation
+plt.figure(figsize=(10, 6))
+plt.scatter(X_train, y_train, alpha=0.6, label='Train')
+plt.scatter(X_test, y_test, alpha=0.6, label='Test', color='orange')
+plt.plot(X, model.predict(X), color='red', linewidth=2, label='Droite de régression')
+plt.xlabel('X')
+plt.ylabel('y')
+plt.title('Régression Linéaire Simple')
+plt.legend()
+plt.grid(alpha=0.3)
+plt.show()
+```
+
+### Exercice 2.1: Comprendre les Coefficients
+
+Soit le modèle suivant pour prédire le prix d'une maison:
+$$\text{Prix} = 50000 + 150 \times \text{Surface} + 10000 \times \text{Nb\_Chambres}$$
+
+**Questions:**
+
+1. Interprétez chaque coefficient
+2. Prédisez le prix d'une maison de 100m² avec 3 chambres
+3. Quelle est l'augmentation de prix si on ajoute 10m²?
+4. Si Surface et Nb_Chambres sont corrélés, quel problème peut survenir?
+
+::: {.callout-note collapse="true"}
+## Solution Exercice 2.1
+
+**1. Interprétation des coefficients:**
+
+- **$\beta_0$ = 50,000€** (Intercept)
+
+  - Prix de base (théorique) d'une maison avec 0m² et 0 chambres
+  - Souvent non interprétable physiquement (extrapolation)
+  
+- **$\beta_1 = 150\,\text{€}/\text{m}^2$** (Coefficient de Surface)
+
+  - Augmentation du prix pour chaque m² supplémentaire
+  - **Interprétation**: À nombre de chambres constant, +1m² → +150€
+  
+- **$\beta_2 = 10\,000~\text{€}/\text{chambre}$** (Coefficient de Nb_Chambres)
+
+  - Augmentation du prix pour chaque chambre supplémentaire
+  - **Interprétation**: À surface constante, +1 chambre → +10,000€
+
+**2. Prédiction:**
+
+Prix = 50,000 + 150 × 100 + 10,000 × 3
+Prix = 50,000 + 15,000 + 30,000
+**Prix = 95,000€**
+
+**3. Augmentation pour +10m²:**
+
+$$\Delta\text{Prix} = \beta_1 \times \Delta\text{Surface} = 150 \times 10 = \mathbf{1\,500}~\textbf{€}$$
+
+(À nombre de chambres constant)
+
+**4. Problème de corrélation (Multicolinéarité):**
+
+Si Surface et Nb_Chambres sont fortement corrélés (ex: plus de surface → généralement plus de chambres):
+
+**Conséquences:**
+
+- Coefficients instables (varient beaucoup selon les données)
+- Difficulté d'interprétation (quel feature a vraiment l'impact?)
+- Matrice $\mathbf{X}^T\mathbf{X}$ mal conditionnée
+- Variance des estimateurs élevée
+
+**Solutions:**
+
+- Supprimer une des features corrélées
+- Utiliser des techniques de régularisation (Ridge, Lasso)
+- PCA pour créer des features non corrélées
+:::
+
+## 3. Régularisation: Ridge, Lasso, ElasticNet
+
+### 3.1 Problème du Surapprentissage
+
+**Régression linéaire simple** peut **surapprendre** avec:
+
+- Nombreuses features (p >> n)
+- Features corrélées (multicolinéarité)
+- Features non pertinentes
+
+**Symptômes:**
+
+- Coefficients très grands (instables)
+- Excellent fit sur train, mauvais sur test
+- Modèle sensible au bruit
+
+**Solution:** **Régularisation** = pénaliser les grands coefficients
+
+### 3.2 Ridge Regression (Régularisation L2)
+
+**Fonction de coût:**
+$$\text{Cost}_{\text{Ridge}} = \text{MSE} + \alpha \sum_{j=1}^{p}\beta_j^2$$
+
+$$= \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2 + \alpha \|\boldsymbol{\beta}\|_2^2$$
+
+Où:
+
+- $\alpha \geq 0$ : paramètre de régularisation (hyperparamètre)
+- $\|\boldsymbol{\beta}\|_2^2 = \sum_{j=1}^{p}\beta_j^2$ : norme L2 des coefficients
+
+**Effet:**
+
+- Pénalise les coefficients élevés
+- Coefficients rétrécis vers 0 mais **jamais exactement 0**
+- Tous les features restent dans le modèle
+
+**Cas limites:**
+
+- $\alpha = 0$ → Régression linéaire classique
+- $\alpha \to \infty$ → Tous les coefficients → 0
+
+**Solution analytique:**
+$$\boldsymbol{\beta}_{\text{Ridge}} = (\mathbf{X}^T\mathbf{X} + \alpha \mathbf{I})^{-1}\mathbf{X}^T\mathbf{y}$$
+
+**Implémentation:**
+
+```python
+from sklearn.linear_model import Ridge
+
+# Modèle Ridge
+ridge = Ridge(alpha=1.0)  
+ridge.fit(X_train, y_train)
+y_pred = ridge.predict(X_test)
+
+print(f"Coefficients Ridge: {ridge.coef_}")
+```
+
+### 3.3 Lasso Regression (Régularisation L1)
+
+**Fonction de coût:**
+$$\text{Cost}_{\text{Lasso}} = \text{MSE} + \alpha \sum_{j=1}^{p}|\beta_j|$$
+
+$$= \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2 + \alpha \|\boldsymbol{\beta}\|_1$$
+
+Où:
+
+- $\|\boldsymbol{\beta}\|_1 = \sum_{j=1}^{p}|\beta_j|$ : norme L1 des coefficients
+
+**Effet:**
+
+- Pénalise les coefficients élevés
+- Peut mettre certains coefficients **exactement à 0**
+- **Sélection automatique de features**
+
+**Avantages:**
+
+- Modèle plus simple et interprétable (moins de features)
+- Utile quand on soupçonne que certaines features sont inutiles
+
+**Implémentation:**
+
+```python
+from sklearn.linear_model import Lasso
+
+# Modèle Lasso
+lasso = Lasso(alpha=0.1)
+lasso.fit(X_train, y_train)
+
+# Compter les features sélectionnées
+selected_features = np.sum(lasso.coef_ != 0)
+print(f"Features sélectionnées: {selected_features}/{len(lasso.coef_)}")
+```
+
+### 3.4 ElasticNet (Combinaison L1 + L2)
+
+**Fonction de coût:**
+$$\text{Cost}_{\text{ElasticNet}} = \text{MSE} + \alpha \left( \rho \|\boldsymbol{\beta}\|_1 + \frac{1-\rho}{2} \|\boldsymbol{\beta}\|_2^2 \right)$$
+
+Où:
+
+- $\alpha$ : force de régularisation
+- $\rho \in [0, 1]$ : ratio L1/L2 (l1_ratio)
+  - $\rho = 0$ → Ridge pure
+  - $\rho = 1$ → Lasso pure
+
+**Avantages:**
+
+- Combine avantages de Ridge et Lasso
+- Gère mieux les features corrélées que Lasso seul
+- Sélection de features comme Lasso
+
+**Implémentation:**
+
+```python
+from sklearn.linear_model import ElasticNet
+
+# Modèle ElasticNet
+elastic = ElasticNet(alpha=0.1, l1_ratio=0.5)  # 50% L1, 50% L2
+elastic.fit(X_train, y_train)
+```
+
+### 3.5 Comparaison Visuelle
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+
+# Dataset synthétique avec 20 features
+np.random.seed(42)
+n_samples, n_features = 100, 20
+X = np.random.randn(n_samples, n_features)
+# Seulement 5 features vraiment utiles
+true_coef = np.zeros(n_features)
+true_coef[:5] = [5, -3, 2, -4, 3]
+y = X @ true_coef + np.random.randn(n_samples) * 0.5
+
+# Entraîner les modèles
+models = {
+    'Linear': LinearRegression(),
+    'Ridge (alpha=1)': Ridge(alpha=1.0),
+    'Ridge (alpha=10)': Ridge(alpha=10.0),
+    'Lasso (alpha=0.1)': Lasso(alpha=0.1),
+    'Lasso (alpha=1)': Lasso(alpha=1.0),
+    'ElasticNet': ElasticNet(alpha=0.1, l1_ratio=0.5)
+}
+
+fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+axes = axes.ravel()
+
+for idx, (name, model) in enumerate(models.items()):
+    model.fit(X, y)
+    coefs = model.coef_
+    
+    axes[idx].bar(range(n_features), coefs, alpha=0.7)
+    axes[idx].bar(range(5), true_coef[:5], alpha=0.3, color='red', label='Vrais coefs')
+    axes[idx].axhline(0, color='black', linewidth=0.8, linestyle='--')
+    axes[idx].set_title(name)
+    axes[idx].set_xlabel('Feature Index')
+    axes[idx].set_ylabel('Coefficient Value')
+    axes[idx].legend()
+    axes[idx].grid(alpha=0.3)
+    
+    # Nombre de coefs non-nuls
+    non_zero = np.sum(np.abs(coefs) > 1e-5)
+    axes[idx].text(0.95, 0.95, f'Non-zero: {non_zero}',
+                   transform=axes[idx].transAxes,
+                   ha='right', va='top',
+                   bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+plt.tight_layout()
+plt.show()
+```
+
+**Observations:**
+
+- **Linear**: Coefficients instables, sensibles au bruit
+- **Ridge**: Réduit tous les coefficients, mais aucun à 0
+- **Lasso**: Met beaucoup de coefficients à 0 (sélection)
+- **ElasticNet**: Compromis entre Ridge et Lasso
+
+### 3.6 Choix du Paramètre $\alpha$
+
+**Méthode:** Validation croisée avec GridSearchCV ou RidgeCV/LassoCV
+
+```python
+from sklearn.linear_model import RidgeCV, LassoCV
+from sklearn.model_selection import cross_val_score
+
+# Ridge avec CV intégrée
+alphas = np.logspace(-3, 3, 100)
+ridge_cv = RidgeCV(alphas=alphas, cv=5)
+ridge_cv.fit(X_train, y_train)
+
+print(f"Meilleur alpha (Ridge): {ridge_cv.alpha_:.4f}")
+
+# Lasso avec CV
+lasso_cv = LassoCV(alphas=alphas, cv=5, random_state=42)
+lasso_cv.fit(X_train, y_train)
+
+print(f"Meilleur alpha (Lasso): {lasso_cv.alpha_:.4f}")
+
+# Visualiser l'effet de alpha
+mse_scores = []
+for alpha in alphas:
+    ridge = Ridge(alpha=alpha)
+    scores = cross_val_score(ridge, X_train, y_train, cv=5, scoring='neg_mean_squared_error')
+    mse_scores.append(-scores.mean())
+
+plt.figure(figsize=(10, 6))
+plt.plot(alphas, mse_scores, marker='o')
+plt.xscale('log')
+plt.xlabel('alpha (log scale)')
+plt.ylabel('MSE (Cross-Validation)')
+plt.title('Choix de alpha pour Ridge Regression')
+plt.axvline(ridge_cv.alpha_, color='red', linestyle='--', label=f'Optimal alpha={ridge_cv.alpha_:.2f}')
+plt.legend()
+plt.grid(alpha=0.3)
+plt.show()
+```
+
+### 3.7 Quand Utiliser Quel Modèle?
+
+| Situation | Modèle Recommandé | Raison |
+|-----------|------------------|---------|
+| Features non corrélées, toutes utiles | **Linear** | Simplicité suffisante |
+| Multicolinéarité forte | **Ridge** | Stabilise les coefficients |
+| Beaucoup de features inutiles | **Lasso** | Sélection automatique |
+| Multicolinéarité + features inutiles | **ElasticNet** | Combine avantages L1+L2 |
+| Petite dimension (p < n) | **Linear** ou **Ridge** | Pas de sélection nécessaire |
+| Grande dimension (p >> n) | **Lasso** ou **ElasticNet** | Évite surapprentissage |
+
+## 4. Support Vector Regression (SVR)
+
+### 4.1 Principe
+
+**SVR** adapte les SVM à la régression:
+
+- Cherche une fonction qui dévie au maximum de $\epsilon$ de la vraie valeur
+- Ignore les erreurs inférieures à $\epsilon$ ($\epsilon$-tube)
+- Minimise les erreurs au-delà de $\epsilon$
+
+**Fonction objectif:**
+$$\min_{\mathbf{w}, b} \frac{1}{2}\|\mathbf{w}\|^2 + C\sum_{i=1}^{n}(\xi_i + \xi_i^*)$$
+
+Sous contraintes:
+$$|y_i - (\mathbf{w}^T\mathbf{x}_i + b)| \leq \epsilon + \xi_i$$
+
+Où:
+
+- $\epsilon$ : largeur de l'$\epsilon$-tube (tolérance)
+- $C$ : paramètre de régularisation
+- $\xi_i$ : variables de relâchement
+
+### 4.2 Kernels pour Relations Non-Linéaires
+
+**SVR linéaire:**
+```python
+from sklearn.svm import SVR
+
+svr_lin = SVR(kernel='linear', C=1.0, epsilon=0.1)
+svr_lin.fit(X_train, y_train)
+```
+
+**SVR avec noyau RBF (Gaussian):**
+```python
+svr_rbf = SVR(kernel='rbf', C=1.0, epsilon=0.1, gamma='scale')
+svr_rbf.fit(X_train, y_train)
+```
+
+**Hyperparamètres:**
+
+- `C`: Trade-off entre erreur et complexité (comme SVM)
+- `epsilon`: Largeur du tube (erreurs < $\epsilon$ ignorées)
+- `gamma`: Influence du kernel RBF (si kernel='rbf')
+
+### 4.3 Avantages et Limites
+
+**Avantages:**
+
+- Gère relations non-linéaires avec kernels
+- Robuste aux outliers (grâce à $\epsilon$-tube)
+- Efficace en haute dimension
+
+**Limites:**
+
+- Lent sur grands datasets (pas de solution analytique)
+- Sensible au choix des hyperparamètres
+- Moins interprétable que régression linéaire
+
+## 5. Métriques d'Évaluation pour la Régression
+
+### 5.1 Mean Absolute Error (MAE)
+
+**Définition:**
+$$\text{MAE} = \frac{1}{n}\sum_{i=1}^{n}|y_i - \hat{y}_i|$$
+
+**Interprétation:**
+
+- Erreur moyenne absolue
+- Même unité que y
+- Moins sensible aux outliers que MSE
+
+```python
+from sklearn.metrics import mean_absolute_error
+
+mae = mean_absolute_error(y_test, y_pred)
+print(f"MAE: {mae:.2f}")
+```
+
+### 5.2 Mean Squared Error (MSE)
+
+**Définition:**
+$$\text{MSE} = \frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2$$
+
+**Interprétation:**
+
+- Erreur quadratique moyenne
+- Unité: (unité de y)²
+- Pénalise davantage les grandes erreurs
+
+```python
+from sklearn.metrics import mean_squared_error
+
+mse = mean_squared_error(y_test, y_pred)
+print(f"MSE: {mse:.2f}")
+```
+
+### 5.3 Root Mean Squared Error (RMSE)
+
+**Définition:**
+$$\text{RMSE} = \sqrt{\text{MSE}} = \sqrt{\frac{1}{n}\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}$$
+
+**Interprétation:**
+
+- Racine carrée de MSE
+- Même unité que y (plus interprétable que MSE)
+- Erreur "typique"
+
+```python
+rmse = np.sqrt(mse)
+print(f"RMSE: {rmse:.2f}")
+```
+
+### 5.4 R² Score (Coefficient de Détermination)
+
+**Définition:**
+$$R^2 = 1 - \frac{\sum_{i=1}^{n}(y_i - \hat{y}_i)^2}{\sum_{i=1}^{n}(y_i - \bar{y})^2}$$
+
+Où $\bar{y} = \frac{1}{n}\sum_{i=1}^{n}y_i$ (moyenne)
+
+**Interprétation:**
+
+- Proportion de variance expliquée par le modèle
+- **R² = 1**: Prédiction parfaite
+- **R² = 0**: Modèle aussi bon que la moyenne
+- **R² < 0**: Modèle pire que la moyenne
+
+```python
+from sklearn.metrics import r2_score
+
+r2 = r2_score(y_test, y_pred)
+print(f"R²: {r2:.4f}")
+```
+
+**Attention:** R² peut être trompeur!
+
+- Augmente toujours avec plus de features (même inutiles)
+- Solution: **Adjusted R²**
+
+$$R^2_{\text{adj}} = 1 - \frac{(1-R^2)(n-1)}{n-p-1}$$
+
+### 5.5 Comparaison des Métriques
+
+| Métrique | Unité | Sensibilité Outliers | Interprétation | Usage |
+|----------|-------|----------------------|----------------|--------|
+| **MAE** | y | Faible | Erreur moyenne | Robuste, facile |
+| **MSE** | y² | Forte | Erreur quadratique | Optimisation math |
+| **RMSE** | y | Forte | Erreur "typique" | Interprétable |
+| **R²** | Sans | Moyenne | Variance expliquée | Comparaison modèles |
+
+**Recommandation:**
+
+- Rapporter **plusieurs** métriques
+- **RMSE** pour interprétabilité
+- **R²** pour comparaison de modèles
+- **MAE** si présence d'outliers
+
+## Résumé de la Séance
+
+::: {.callout-important icon=false}
+## Points clés à retenir
+
+### 1. Régression vs Classification
+- Régression = prédire une **valeur continue**
+- Classification = prédire une **catégorie**
+
+### 2. Régression Linéaire
+- Modèle: $y = \beta_0 + \sum_{j=1}^{p}\beta_j x_j + \epsilon$
+- Solution analytique (équation normale)
+- Risque de surapprentissage si p élevé
+
+### 3. Régularisation
+- **Ridge (L2)**: Réduit coefficients, aucun à 0
+- **Lasso (L1)**: Sélection de features (coefs à 0)
+- **ElasticNet**: Combine L1 + L2
+- Hyperparamètre $\alpha$ à optimiser par CV
+
+### 4. SVR
+- Régression avec SVMs
+- Gère non-linéarité (kernels)
+- Robuste aux outliers
+
+### 5. Métriques
+- **MAE**: Erreur absolue moyenne
+- **RMSE**: Erreur quadratique (même unité que y)
+- **R²**: Variance expliquée (0-1)
+:::
+
+## Préparation TP3
+
+Le prochain TP mettra en pratique:
+
+- Implémentation de modèles de régression
+- Comparaison Linear, Ridge, Lasso, ElasticNet, SVR
+- Optimisation des hyperparamètres
+- Évaluation avec métriques multiples
+- Visualisation des résultats
+
+**À préparer:**
+
+- Installer scikit-learn à jour
+- Réviser GridSearchCV/RandomizedSearchCV
+- Comprendre les hyperparamètres de chaque modèle

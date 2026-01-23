@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>FM.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="fiche-mati%C3%A8re-%C2%AB-machine-learning-et-deep-learning-%C2%BB">Fiche Matière « Machine Learning et Deep Learning »</h1>
+<p><strong>(AU 2025-2026)</strong></p>
+<hr>
+<h2 id="informations-g%C3%A9n%C3%A9rales">Informations Générales</h2>
+<table>
+<thead>
+<tr>
+<th>Intitulé</th>
+<th>Machine Learning et Deep Learning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Département</strong></td>
+<td>Génie Informatique</td>
+</tr>
+<tr>
+<td><strong>Niveau</strong></td>
+<td>2ème année</td>
+</tr>
+<tr>
+<td><strong>Semestre</strong></td>
+<td>S2</td>
+</tr>
+<tr>
+<td><strong>Coefficient</strong></td>
+<td>À définir</td>
+</tr>
+<tr>
+<td><strong>Régime</strong></td>
+<td>Mixte</td>
+</tr>
+<tr>
+<td><strong>Volume Horaire Total</strong></td>
+<td>42h</td>
+</tr>
+<tr>
+<td><strong>Cours / TD</strong></td>
+<td>21h</td>
+</tr>
+<tr>
+<td><strong>TP / Projet</strong></td>
+<td>21h</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="pr%C3%A9requis">Prérequis</h2>
+<h3 id="math%C3%A9matiques">Mathématiques</h3>
+<ul>
+<li><strong>Algèbre linéaire</strong> : connaissances sur les vecteurs, les matrices, les opérations matricielles.</li>
+<li><strong>Calcul différentiel et intégral</strong> : compréhension des dérivées, des gradients et des intégrales.</li>
+<li><strong>Probabilités et statistiques</strong> : notions de base sur les distributions de probabilité, les estimations de paramètres, les tests d'hypothèses.</li>
+</ul>
+<h3 id="programmation">Programmation</h3>
+<ul>
+<li><strong>Compétences de programmation en Python</strong> : compréhension des structures de contrôle, des fonctions, des classes et des bibliothèques couramment utilisées telles que NumPy, Pandas, et Matplotlib.</li>
+</ul>
+<hr>
+<h2 id="objectifs-dapprentissage">Objectifs d'Apprentissage</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Objectif</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Obj1</strong></td>
+<td>Comprendre les concepts fondamentaux du Machine Learning.</td>
+</tr>
+<tr>
+<td><strong>Obj2</strong></td>
+<td>Être capable d'identifier différents types de problèmes pouvant être résolus avec le ML.</td>
+</tr>
+<tr>
+<td><strong>Obj3</strong></td>
+<td>Développer une compréhension des applications du ML dans divers domaines.</td>
+</tr>
+<tr>
+<td><strong>Obj4</strong></td>
+<td>Être en mesure d'appliquer des concepts de probabilités et de statistiques pour évaluer les modèles de ML.</td>
+</tr>
+<tr>
+<td><strong>Obj5</strong></td>
+<td>Comprendre les différences entre les tâches de régression et de classification.</td>
+</tr>
+<tr>
+<td><strong>Obj6</strong></td>
+<td>Être capable d'entraîner et d'évaluer des modèles de régression et de classification.</td>
+</tr>
+<tr>
+<td><strong>Obj7</strong></td>
+<td>Explorer les techniques d'optimisation et leurs effets sur la convergence des modèles.</td>
+</tr>
+<tr>
+<td><strong>Obj8</strong></td>
+<td>Comprendre les principes du clustering et de la réduction de la dimension.</td>
+</tr>
+<tr>
+<td><strong>Obj9</strong></td>
+<td>Être capable d'appliquer des techniques de clustering pour regrouper des données non étiquetées.</td>
+</tr>
+<tr>
+<td><strong>Obj10</strong></td>
+<td>Explorer les avantages et les limitations des méthodes de réduction de la dimension.</td>
+</tr>
+<tr>
+<td><strong>Obj11</strong></td>
+<td>Acquérir une compréhension approfondie de l'architecture des réseaux de neurones artificiels.</td>
+</tr>
+<tr>
+<td><strong>Obj12</strong></td>
+<td>Être capable de construire, entraîner et évaluer des réseaux de neurones multicouches pour des tâches simples.</td>
+</tr>
+<tr>
+<td><strong>Obj13</strong></td>
+<td>Comprendre les principes de base de la rétropropagation du gradient.</td>
+</tr>
+<tr>
+<td><strong>Obj14</strong></td>
+<td>Comprendre la structure et le fonctionnement des CNN.</td>
+</tr>
+<tr>
+<td><strong>Obj15</strong></td>
+<td>Être capable d'appliquer les CNN à des tâches de vision par ordinateur et de traitement d'images.</td>
+</tr>
+<tr>
+<td><strong>Obj16</strong></td>
+<td>Explorer des architectures avancées de CNN pour améliorer les performances.</td>
+</tr>
+<tr>
+<td><strong>Obj17</strong></td>
+<td>Comprendre et appliquer des méthodes de régularisation avancées (Dropout, BatchNorm).</td>
+</tr>
+<tr>
+<td><strong>Obj18</strong></td>
+<td>Savoir utiliser des architectures pré-entraînées (Transfer Learning).</td>
+</tr>
+<tr>
+<td><strong>Obj19</strong></td>
+<td>Comprendre les principes des GAN et leurs applications.</td>
+</tr>
+<tr>
+<td><strong>Obj20</strong></td>
+<td>Maîtriser les techniques de Gradient Boosting (XGBoost, LightGBM).</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="ouvrages-de-r%C3%A9f%C3%A9rence">Ouvrages de Référence</h2>
+<table>
+<thead>
+<tr>
+<th>Référence</th>
+<th>Détails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Zhou, Victor (2019)</strong></td>
+<td><em>&quot;Machine Learning for Beginners: An Introduction to Neural Networks&quot;</em>, Medium.</td>
+</tr>
+<tr>
+<td><strong>Deng &amp; Yu (2014)</strong></td>
+<td><em>&quot;Deep Learning: Methods and Applications&quot;</em>, Foundations and Trends® in Signal Processing.</td>
+</tr>
+<tr>
+<td><strong>Goodfellow, Bengio &amp; Courville (2016)</strong></td>
+<td><em>&quot;Deep Learning&quot;</em>, MIT Press. ISBN 978-0-26203561-3.</td>
+</tr>
+<tr>
+<td><strong>Géron, A. (2019)</strong></td>
+<td><em>&quot;Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow&quot;</em>, 2nd Edition.</td>
+</tr>
+<tr>
+<td><strong>Chollet, F. (2021)</strong></td>
+<td><em>&quot;Deep Learning with Python&quot;</em>, 2nd Edition, Manning Publications.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="programme-d%C3%A9taill%C3%A9-des-s%C3%A9ances">Programme Détaillé des Séances</h2>
+<h3 id="partie-1--machine-learning-fondamental"><strong>Partie 1 : Machine Learning Fondamental</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Séance</th>
+<th>Type</th>
+<th>Contenu</th>
+<th>Objectifs Spécifiques</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Séance 1</strong></td>
+<td>Cours</td>
+<td><strong>Introduction IA et Machine Learning</strong><br>- Définitions et concepts de base<br>- Applications et cas d'utilisation<br>- Types d'apprentissage : supervisé, non supervisé, semi-supervisé, renforcement<br>- Étapes de conception d'un modèle IA</td>
+<td>Obj1, Obj2, Obj3</td>
+</tr>
+<tr>
+<td><strong>Séance 2</strong></td>
+<td>Cours</td>
+<td><strong>Apprentissage Supervisé : Classification</strong><br>- Définition et principe<br>- Types : binaire, multi-classes, multi-label<br>- Algorithmes : Arbre de décision, Random Forest, SVM, Naïve Bayes, <strong>Régression Logistique</strong><br>- Critères d'évaluation</td>
+<td>Obj5, Obj6</td>
+</tr>
+<tr>
+<td><strong>Séance 3</strong></td>
+<td>TP</td>
+<td><strong>TP1 : Pipeline de Classification Binaire avec Scikit-learn</strong><br>- Chargement et préparation des données<br>- Split train/validation/test<br>- Standardisation dans un pipeline<br>- Entraînement et évaluation initiale</td>
+<td>Obj6, Obj7</td>
+</tr>
+<tr>
+<td><strong>Séance 4</strong></td>
+<td>TD</td>
+<td><strong>TD1 : Modèles de Classification de Base</strong><br>- Arbre de décision<br>- Régression logistique (intuition probabiliste)<br>- k-NN : distance et voisinage<br>- Naïve Bayes<br>- <strong>Gradient Boosting (XGBoost/LightGBM)</strong><br>- Avantages, limites, complexité</td>
+<td>Obj4, Obj6</td>
+</tr>
+<tr>
+<td><strong>Séance 5</strong></td>
+<td>TD</td>
+<td><strong>TD2 : Critères d'Évaluation</strong><br>- Matrice de confusion<br>- Accuracy, Precision, Recall, F1-score<br>- Courbe ROC/AUC<br>- Comparaison critique des résultats</td>
+<td>Obj4</td>
+</tr>
+<tr>
+<td><strong>Séance 6</strong></td>
+<td>TP</td>
+<td><strong>TP2 : Classification Multi-classes &amp; Optimisation</strong><br>- Utilisation de GridSearchCV et RandomizedSearchCV<br>- Validation croisée<br>- Comparaison de plusieurs algorithmes</td>
+<td>Obj6, Obj7</td>
+</tr>
+<tr>
+<td><strong>Séance 7</strong></td>
+<td>Cours</td>
+<td><strong>Apprentissage Supervisé : Régression</strong><br>- Définition et principe<br>- Régression linéaire : fondements théoriques<br>- <strong>Régularisation : Ridge, Lasso, ElasticNet</strong><br>- SVR (Support Vector Regression)<br>- Métriques d'évaluation (MAE, MSE, R²)</td>
+<td>Obj5, Obj6</td>
+</tr>
+<tr>
+<td><strong>Séance 8</strong></td>
+<td>TP</td>
+<td><strong>TP3 : Régression &amp; Optimisation</strong><br>- Mise en œuvre de modèles de régression<br>- Optimisation des hyperparamètres<br>- Évaluation et comparaison</td>
+<td>Obj6, Obj7</td>
+</tr>
+<tr>
+<td><strong>Séance 9</strong></td>
+<td>Cours</td>
+<td><strong>Apprentissage Non Supervisé</strong><br>- Définitions et principes<br>- k-means : avantages, inconvénients<br>- DBSCAN : principe de densité<br>- Mesures de qualité (silhouette, inertie)<br>- Applications réelles</td>
+<td>Obj8, Obj9</td>
+</tr>
+<tr>
+<td><strong>Séance 10</strong></td>
+<td>TP</td>
+<td><strong>TP4 : Clustering &amp; Réduction de Dimension</strong><br>- Choix du nombre de clusters<br>- Visualisation des groupes<br>- PCA pour amélioration de l'analyse<br>- Interprétation métier</td>
+<td>Obj9, Obj10</td>
+</tr>
+</tbody>
+</table>
+<h3 id="partie-2--r%C3%A9seaux-de-neurones--deep-learning"><strong>Partie 2 : Réseaux de Neurones &amp; Deep Learning</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Séance</th>
+<th>Type</th>
+<th>Contenu</th>
+<th>Objectifs Spécifiques</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Séance 11</strong></td>
+<td>Cours</td>
+<td><strong>Réseaux de Neurones Artificiels</strong><br>- Architecture (couches, neurones)<br>- Fonctions d'activation<br>- Fonction coût<br>- Descente de gradient<br>- Rétropropagation<br>- Paramètres &amp; Hyperparamètres<br>- Régularisation (Dropout, BatchNorm)</td>
+<td>Obj11, Obj12, Obj13, Obj17</td>
+</tr>
+<tr>
+<td><strong>Séance 12</strong></td>
+<td>TP</td>
+<td><strong>TP5 : Réseaux de Neurones avec Keras/TensorFlow</strong><br>- Construction d'un réseau multicouche<br>- Choix des fonctions d'activation<br>- Entraînement avec SGD/Adam<br>- Visualisation des courbes loss/accuracy<br>- Techniques de régularisation</td>
+<td>Obj12, Obj13, Obj17</td>
+</tr>
+<tr>
+<td><strong>Séance 13</strong></td>
+<td>TD</td>
+<td><strong>TD de Révision : QCM &amp; Préparation</strong><br>- Révision des concepts ML/RNA<br>- Exercices pratiques<br>- Préparation aux certifications</td>
+<td>Tous objectifs</td>
+</tr>
+<tr>
+<td><strong>Séance 14</strong></td>
+<td>DS</td>
+<td><strong>Devoir Surveillé</strong><br>- Partie théorique (QCM, questions ouvertes)<br>- Partie pratique (analyse de code, interprétation de résultats)</td>
+<td>Évaluation intermédiaire</td>
+</tr>
+<tr>
+<td><strong>Séance 15</strong></td>
+<td>Cours</td>
+<td><strong>Deep Learning : Fondements Avancés</strong><br>- Différence RNA/DL<br>- Architectures : CNN, RNN, LSTM<br>- Principes des CNN (convolution, pooling)<br>- Applications en vision par ordinateur</td>
+<td>Obj14, Obj15, Obj16</td>
+</tr>
+<tr>
+<td><strong>Séance 16</strong></td>
+<td>TP</td>
+<td><strong>TP6 : Réseaux Convolutifs (CNN)</strong><br>- Construction d'un CNN simple<br>- Entraînement sur dataset d'images<br>- Visualisation des filtres<br>- Évaluation des performances</td>
+<td>Obj15, Obj16</td>
+</tr>
+<tr>
+<td><strong>Séance 17</strong></td>
+<td>TP</td>
+<td><strong>TP7 : Transfer Learning avec CNN</strong><br>- Utilisation de modèles pré-entraînés (VGG16, ResNet)<br>- Fine-tuning<br>- Évaluation comparative</td>
+<td>Obj15, Obj18</td>
+</tr>
+<tr>
+<td><strong>Séance 18</strong></td>
+<td>TP</td>
+<td><strong>TP8 : RNN pour Séries Temporelles</strong><br>- Prétraitement des séquences<br>- Construction de LSTM/GRU<br>- Prédiction de séries temporelles<br>- Évaluation et visualisation</td>
+<td>Obj12, Obj13</td>
+</tr>
+<tr>
+<td><strong>Séance 19</strong></td>
+<td>Cours</td>
+<td><strong>IA Générative &amp; GAN</strong><br>- Définition et principes<br>- Architecture GAN (Générateur/Discriminateur)<br>- Fonctions de coût (adversarial loss)<br>- Applications en Data Science</td>
+<td>Obj19</td>
+</tr>
+<tr>
+<td><strong>Séance 20</strong></td>
+<td>TP</td>
+<td><strong>TP9 : Introduction aux GAN</strong><br>- Initialisation des modèles<br>- Définition des loss et optimizers<br>- Entraînement itératif<br>- Visualisation des images générées</td>
+<td>Obj19</td>
+</tr>
+</tbody>
+</table>
+<h3 id="partie-3--projet--%C3%A9valuation-finale"><strong>Partie 3 : Projet &amp; Évaluation Finale</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Séance</th>
+<th>Type</th>
+<th>Contenu</th>
+<th>Objectifs Spécifiques</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Séance 21</strong></td>
+<td>Cours</td>
+<td><strong>Proposition de Mini-Projet</strong><br>- Présentation des règles<br>- Proposition des sujets par étudiants<br>- Validation des datasets et faisabilité<br>- Définition des livrables</td>
+<td>Application des concepts</td>
+</tr>
+<tr>
+<td><strong>Séance 22</strong></td>
+<td>Projet</td>
+<td><strong>Travail Encadré sur Projet</strong><br>- Séance de travail en groupe<br>- Assistance technique et méthodologique</td>
+<td>Obj3, Obj6, Obj12, Obj15</td>
+</tr>
+<tr>
+<td><strong>Séance 23</strong></td>
+<td>Projet</td>
+<td><strong>Travail Encadré sur Projet</strong><br>- Finalisation du code<br>- Préparation du rapport et de la présentation</td>
+<td>Application complète</td>
+</tr>
+<tr>
+<td><strong>Séance 24</strong></td>
+<td>Évaluation</td>
+<td><strong>Présentation des Mini-Projets</strong><br>- Présentation orale (10 min/groupe)<br>- Démonstration technique<br>- Questions/Réponses</td>
+<td>Évaluation finale</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="syst%C3%A8me-d%C3%A9valuation">Système d'Évaluation</h2>
+<table>
+<thead>
+<tr>
+<th>Type d'Évaluation</th>
+<th>Pourcentage</th>
+<th>Détails</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Mini-Projet</strong></td>
+<td>60%</td>
+<td>- Rapport technique (20%)<br>- Code et implémentation (20%)<br>- Présentation orale (20%)</td>
+</tr>
+<tr>
+<td><strong>Devoir Surveillé (DS)</strong></td>
+<td>40%</td>
+<td>- Partie théorique : QCM/questions ouvertes (20%)<br>- Partie pratique : analyse de code/cas d'étude (20%)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="responsables">Responsables</h2>
+<table>
+<thead>
+<tr>
+<th>Rôle</th>
+<th>Nom &amp; Prénom</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Enseignant(e)</strong></td>
+<td>Dr. Fatma Sbiaa</td>
+</tr>
+<tr>
+<td><strong>Directeur du Département</strong></td>
+<td>Mr. Ramzi Mahmoudi</td>
+</tr>
+<tr>
+<td><strong>Directeur des Études</strong></td>
+<td>Pr. Moncef Bouzidi</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="notes-p%C3%A9dagogiques">Notes Pédagogiques</h2>
+<ol>
+<li><strong>Supports de cours</strong> : Disponibles sur plateforme Moodle/Teams</li>
+<li><strong>Langages/Frameworks</strong> : Python, Scikit-learn, TensorFlow/Keras, PyTorch (optionnel)</li>
+<li><strong>Environnement</strong> : Jupyter Notebook, Google Colab, VS Code</li>
+<li><strong>Projets</strong> : Les étudiants peuvent proposer leurs propres datasets (sous validation)</li>
+<li><strong>Certifications</strong> : Préparation aux certifications Google/Microsoft en ML/Datacamp</li>
+</ol>
+
+</body>
+</html>

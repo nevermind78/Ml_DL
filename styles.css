@@ -1,0 +1,23 @@
+/* Cacher complètement le code source Mermaid */
+pre.sourceCode.mermaid {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Assurer l'affichage du diagramme */
+div.mermaid {
+    display: block !important;
+    min-height: 200px;
+    margin: 20px 0;
+}
+
+/* Optionnel : ajouter un style au container */
+div.cell-output-display .mermaid {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}

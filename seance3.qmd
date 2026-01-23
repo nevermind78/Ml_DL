@@ -1,0 +1,624 @@
+# Séance 3: TP1 - Pipeline de Classification Binaire
+
+::: {.callout-note icon=false}
+## Informations de la séance
+- **Type**: Travaux Pratiques
+- **Durée**: 2h
+- **Objectifs**: Obj6, Obj7
+- **Dataset**: Titanic (prédiction de survie)
+:::
+
+## Objectifs du TP
+
+À la fin de ce TP, vous serez capable de:
+
+1. Charger et explorer un dataset
+2. Préparer les données pour l'apprentissage
+3. Créer un pipeline de prétraitement avec Scikit-learn
+4. Entraîner un modèle de classification binaire
+5. Évaluer les performances du modèle
+
+## 1. Configuration de l'Environnement
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Installation des bibliothèques (si nécessaire)
+# !pip install scikit-learn pandas numpy matplotlib seaborn
+
+# Imports
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.pipeline import Pipeline
+
+# Configuration
+plt.style.use('default')
+sns.set_palette("husl")
+np.random.seed(42)
+
+print("✓ Bibliothèques importées avec succès")
+```
+
+## 2. Chargement et Exploration des Données
+
+### 2.1 Chargement du Dataset Titanic
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Chargement depuis seaborn
+titanic = sns.load_dataset('titanic')
+
+# Affichage des premières lignes
+print("Aperçu des données:")
+print(titanic.head())
+
+print(f"\nDimensions: {titanic.shape}")
+print(f"Colonnes: {titanic.columns.tolist()}")
+```
+
+### 2.2 Exploration Initiale
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Informations générales
+print("Informations sur le dataset:")
+print(titanic.info())
+
+print("\nStatistiques descriptives:")
+print(titanic.describe())
+
+# Vérification des valeurs manquantes
+print("\nValeurs manquantes:")
+print(titanic.isnull().sum())
+
+# Distribution de la variable cible
+print("\nDistribution de la survie:")
+print(titanic['survived'].value_counts())
+print(f"\nTaux de survie: {titanic['survived'].mean():.2%}")
+```
+
+### 2.3 Visualisations Exploratoires
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Figure 1: Distribution de la survie
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+# Survie globale
+axes[0, 0].pie(
+    titanic['survived'].value_counts(), 
+    labels=['Décédé', 'Survivant'],
+    autopct='%1.1f%%',
+    startangle=90,
+    colors=['#ff6b6b', '#51cf66']
+)
+axes[0, 0].set_title('Distribution de la Survie')
+
+# Survie par sexe
+survival_by_sex = titanic.groupby(['sex', 'survived']).size().unstack()
+survival_by_sex.plot(kind='bar', ax=axes[0, 1], color=['#ff6b6b', '#51cf66'])
+axes[0, 1].set_title('Survie par Sexe')
+axes[0, 1].set_xlabel('Sexe')
+axes[0, 1].set_ylabel('Nombre de passagers')
+axes[0, 1].legend(['Décédé', 'Survivant'])
+axes[0, 1].tick_params(axis='x', rotation=0)
+
+# Survie par classe
+survival_by_class = titanic.groupby(['pclass', 'survived']).size().unstack()
+survival_by_class.plot(kind='bar', ax=axes[1, 0], color=['#ff6b6b', '#51cf66'])
+axes[1, 0].set_title('Survie par Classe')
+axes[1, 0].set_xlabel('Classe')
+axes[1, 0].set_ylabel('Nombre de passagers')
+axes[1, 0].legend(['Décédé', 'Survivant'])
+
+# Distribution de l'âge
+axes[1, 1].hist(titanic[titanic['survived']==0]['age'].dropna(), 
+                alpha=0.5, label='Décédé', bins=30, color='#ff6b6b')
+axes[1, 1].hist(titanic[titanic['survived']==1]['age'].dropna(), 
+                alpha=0.5, label='Survivant', bins=30, color='#51cf66')
+axes[1, 1].set_title('Distribution de l\'âge par survie')
+axes[1, 1].set_xlabel('Âge')
+axes[1, 1].set_ylabel('Fréquence')
+axes[1, 1].legend()
+
+plt.tight_layout()
+plt.show()
+```
+
+## 3. Préparation des Données
+
+### 3.1 Sélection des Features
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Sélection des colonnes pertinentes
+features = ['pclass', 'sex', 'age', 'sibsp', 'parch', 'fare', 'embarked']
+target = 'survived'
+
+# Création du dataset de travail
+df = titanic[features + [target]].copy()
+
+print(f"Dataset de travail: {df.shape}")
+print(f"\nValeurs manquantes:")
+print(df.isnull().sum())
+```
+
+### 3.2 Traitement des Valeurs Manquantes
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Stratégies de traitement
+# 1. Age: remplir avec la médiane
+df['age'].fillna(df['age'].median(), inplace=True)
+
+# 2. Embarked: remplir avec le mode (valeur la plus fréquente)
+df['embarked'].fillna(df['embarked'].mode()[0], inplace=True)
+
+# 3. Fare: remplir avec la médiane (si manquant)
+df['fare'].fillna(df['fare'].median(), inplace=True)
+
+# Vérification
+print("Après traitement:")
+print(df.isnull().sum())
+```
+
+### 3.3 Encodage des Variables Catégorielles
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Encodage de 'sex'
+df['sex'] = df['sex'].map({'male': 0, 'female': 1})
+
+# Encodage de 'embarked' (One-Hot Encoding)
+df = pd.get_dummies(df, columns=['embarked'], prefix='embarked', drop_first=True)
+
+print("Dataset après encodage:")
+print(df.head())
+print(f"\nNouvelles dimensions: {df.shape}")
+```
+
+### 3.4 Séparation Features / Target
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Séparation X (features) et y (target)
+X = df.drop('survived', axis=1)
+y = df['survived']
+
+print(f"X shape: {X.shape}")
+print(f"y shape: {y.shape}")
+print(f"\nFeatures utilisées:\n{X.columns.tolist()}")
+```
+
+## 4. Split Train/Validation/Test
+
+### 4.1 Split Train/Test
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Split 80/20
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, 
+    test_size=0.2,      # 20% pour le test
+    random_state=42,    # reproductibilité
+    stratify=y          # préserver la distribution des classes
+)
+
+print(f"Train set: {X_train.shape}")
+print(f"Test set:  {X_test.shape}")
+
+# Vérification de la distribution
+print(f"\nDistribution train: {y_train.value_counts(normalize=True)}")
+print(f"Distribution test:  {y_test.value_counts(normalize=True)}")
+```
+
+### 4.2 Split Train/Validation (optionnel)
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Optionnel: créer un ensemble de validation
+X_train_full, X_val, y_train_full, y_val = train_test_split(
+    X_train, y_train,
+    test_size=0.2,  # 20% du train pour validation
+    random_state=42,
+    stratify=y_train
+)
+
+print(f"Train full: {X_train_full.shape}")
+print(f"Validation: {X_val.shape}")
+print(f"Test:       {X_test.shape}")
+```
+
+## 5. Pipeline de Prétraitement et Entraînement
+
+### 5.1 Création du Pipeline
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Pipeline: Standardisation + Modèle
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),  # Étape 1: Standardisation
+    ('classifier', LogisticRegression(max_iter=1000, random_state=42))  # Étape 2: Modèle
+])
+
+print("Pipeline créé:")
+print(pipeline)
+```
+
+### 5.2 Entraînement du Modèle
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Entraînement
+print("Entraînement en cours...")
+pipeline.fit(X_train, y_train)
+print("✓ Entraînement terminé")
+
+# Prédictions
+y_train_pred = pipeline.predict(X_train)
+y_test_pred = pipeline.predict(X_test)
+
+print("✓ Prédictions effectuées")
+```
+
+## 6. Évaluation Initiale
+
+### 6.1 Accuracy
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Calcul de l'accuracy
+train_accuracy = accuracy_score(y_train, y_train_pred)
+test_accuracy = accuracy_score(y_test, y_test_pred)
+
+print(f"Accuracy Train: {train_accuracy:.4f} ({train_accuracy*100:.2f}%)")
+print(f"Accuracy Test:  {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
+
+# Analyse de l'overfitting
+diff = train_accuracy - test_accuracy
+print(f"\nDifférence Train-Test: {diff:.4f}")
+if diff < 0.05:
+    print("→ Bon équilibre biais-variance")
+elif diff < 0.10:
+    print("→ Léger overfitting")
+else:
+    print("→ Overfitting significatif")
+```
+
+### 6.2 Matrice de Confusion
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Calcul de la matrice de confusion
+cm = confusion_matrix(y_test, y_test_pred)
+
+# Visualisation
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+            xticklabels=['Décédé', 'Survivant'],
+            yticklabels=['Décédé', 'Survivant'])
+plt.title('Matrice de Confusion - Test Set')
+plt.ylabel('Vraie Classe')
+plt.xlabel('Classe Prédite')
+plt.tight_layout()
+plt.show()
+
+# Interprétation
+tn, fp, fn, tp = cm.ravel()
+print(f"\nVrais Négatifs (TN):  {tn}")
+print(f"Faux Positifs (FP):   {fp}")
+print(f"Faux Négatifs (FN):   {fn}")
+print(f"Vrais Positifs (TP):  {tp}")
+```
+
+### 6.3 Rapport de Classification
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Rapport détaillé
+print("\nRapport de Classification:")
+print(classification_report(y_test, y_test_pred, 
+                          target_names=['Décédé', 'Survivant']))
+```
+
+## 7. Comparaison de Plusieurs Modèles
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Définition des modèles
+models = {
+    'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
+    'Decision Tree': DecisionTreeClassifier(max_depth=5, random_state=42),
+    'Random Forest': RandomForestClassifier(n_estimators=100, max_depth=5, random_state=42)
+}
+
+# Entraînement et évaluation
+results = {}
+for name, model in models.items():
+    # Pipeline pour chaque modèle
+    pipe = Pipeline([
+        ('scaler', StandardScaler()),
+        ('classifier', model)
+    ])
+    
+    # Entraînement
+    pipe.fit(X_train, y_train)
+    
+    # Évaluation
+    train_score = pipe.score(X_train, y_train)
+    test_score = pipe.score(X_test, y_test)
+    
+    results[name] = {
+        'train': train_score,
+        'test': test_score,
+        'diff': train_score - test_score
+    }
+    
+    print(f"\n{name}:")
+    print(f"  Train Accuracy: {train_score:.4f}")
+    print(f"  Test Accuracy:  {test_score:.4f}")
+    print(f"  Différence:     {train_score - test_score:.4f}")
+
+# Visualisation comparative
+df_results = pd.DataFrame(results).T
+df_results[['train', 'test']].plot(kind='bar', figsize=(10, 6))
+plt.title('Comparaison des Performances des Modèles')
+plt.xlabel('Modèle')
+plt.ylabel('Accuracy')
+plt.legend(['Train', 'Test'])
+plt.xticks(rotation=45, ha='right')
+plt.ylim([0, 1])
+plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
+plt.show()
+```
+
+## 8. Analyse des Prédictions
+
+### 8.1 Exemples de Prédictions
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Prédictions avec probabilités
+y_proba = pipeline.predict_proba(X_test)
+
+# Affichage de quelques exemples
+n_samples = 5
+indices = np.random.choice(len(X_test), n_samples, replace=False)
+
+print("Exemples de prédictions:\n")
+for idx in indices:
+    actual = y_test.iloc[idx]
+    predicted = y_test_pred[idx]
+    proba = y_proba[idx]
+    
+    print(f"Passager {idx}:")
+    print(f"  Vraie classe:     {'Survivant' if actual == 1 else 'Décédé'}")
+    print(f"  Prédiction:       {'Survivant' if predicted == 1 else 'Décédé'}")
+    print(f"  Probabilités:     Décédé={proba[0]:.2%}, Survivant={proba[1]:.2%}")
+    print(f"  Correct:          {'+' if actual == predicted else '+'}")
+    print()
+```
+
+### 8.2 Analyse des Erreurs
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Identification des erreurs
+errors = X_test[y_test != y_test_pred].copy()
+errors['actual'] = y_test[y_test != y_test_pred]
+errors['predicted'] = y_test_pred[y_test != y_test_pred]
+
+print(f"Nombre d'erreurs: {len(errors)}")
+print(f"Taux d'erreur: {len(errors)/len(X_test):.2%}")
+
+print("\nQuelques erreurs:")
+print(errors.head())
+
+# Analyse des caractéristiques des erreurs
+print("\nCaractéristiques moyennes des erreurs vs correctes:")
+correct = X_test[y_test == y_test_pred]
+
+comparison = pd.DataFrame({
+    'Erreurs': errors.drop(['actual', 'predicted'], axis=1).mean(),
+    'Correctes': correct.mean()
+})
+print(comparison)
+```
+
+## Exercices Pratiques
+
+::: {.callout-warning icon=false collapse="true"}
+## Exercice 1: Feature Engineering
+
+Créez une nouvelle feature `family_size` = `sibsp` + `parch` + 1, puis ré-entraînez le modèle. La performance s'améliore-t-elle ?
+
+### Solution
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+# Création de la nouvelle feature
+df['family_size'] = df['sibsp'] + df['parch'] + 1
+
+# Refaire le split et l'entraînement
+X_new = df.drop('survived', axis=1)
+y_new = df['survived']
+
+X_train_new, X_test_new, y_train_new, y_test_new = train_test_split(
+    X_new, y_new, test_size=0.2, random_state=42, stratify=y_new
+)
+
+pipeline_new = Pipeline([
+    ('scaler', StandardScaler()),
+    ('classifier', LogisticRegression(max_iter=1000, random_state=42))
+])
+
+pipeline_new.fit(X_train_new, y_train_new)
+new_score = pipeline_new.score(X_test_new, y_test_new)
+
+print(f"Accuracy avec family_size: {new_score:.4f}")
+print(f"Accuracy sans family_size: {test_accuracy:.4f}")
+print(f"Amélioration: {new_score - test_accuracy:.4f}")
+```
+:::
+
+::: {.callout-warning icon=false collapse="true"}
+## Exercice 2: Optimisation des Hyperparamètres
+
+Testez différentes valeurs de `max_depth` pour le Decision Tree (3, 5, 7, 10, None). Quelle valeur donne les meilleures performances sur le test set ?
+
+### Solution
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+depths = [3, 5, 7, 10, None]
+results_depth = []
+
+for depth in depths:
+    pipe = Pipeline([
+        ('scaler', StandardScaler()),
+        ('classifier', DecisionTreeClassifier(max_depth=depth, random_state=42))
+    ])
+    
+    pipe.fit(X_train, y_train)
+    train_score = pipe.score(X_train, y_train)
+    test_score = pipe.score(X_test, y_test)
+    
+    results_depth.append({
+        'max_depth': depth,
+        'train': train_score,
+        'test': test_score,
+        'diff': train_score - test_score
+    })
+    
+df_depth = pd.DataFrame(results_depth)
+print(df_depth)
+
+# Meilleure valeur
+best_depth = df_depth.loc[df_depth['test'].idxmax(), 'max_depth']
+print(f"\nMeilleur max_depth: {best_depth}")
+```
+:::
+
+::: {.callout-warning icon=false collapse="true"}
+## Exercice 3: Analyse d'Importance
+
+Pour le Random Forest, affichez l'importance des features. Quelles sont les 3 features les plus importantes ?
+
+### Solution
+
+```{python}
+#| echo: true
+#| eval: false
+#| code-fold: true
+
+# Entraîner Random Forest
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
+
+# Importance des features
+importances = pd.DataFrame({
+    'feature': X_train.columns,
+    'importance': rf.feature_importances_
+}).sort_values('importance', ascending=False)
+
+print("Importance des features:")
+print(importances)
+
+# Visualisation
+plt.figure(figsize=(10, 6))
+plt.barh(importances['feature'], importances['importance'])
+plt.xlabel('Importance')
+plt.title('Importance des Features - Random Forest')
+plt.tight_layout()
+plt.show()
+
+print(f"\nTop 3 features:")
+print(importances.head(3))
+```
+:::
+
+## Résumé du TP
+
+::: {.callout-important icon=false}
+## Ce que vous avez appris
+
+1. **Chargement et exploration** de données avec pandas
+2. **Prétraitement** des données:
+   - Traitement des valeurs manquantes
+   - Encodage des variables catégorielles
+   - Standardisation
+3. **Pipeline Scikit-learn** pour automatiser le workflow
+4. **Split Train/Test** avec stratification
+5. **Entraînement et évaluation** de modèles de classification
+6. **Comparaison** de plusieurs algorithmes
+7. **Analyse des résultats** et des erreurs
+:::
+
+## Checklist de Validation
+
+- [ ] Dataset chargé et exploré
+- [ ] Valeurs manquantes traitées
+- [ ] Variables catégorielles encodées
+- [ ] Pipeline créé avec StandardScaler
+- [ ] Modèle entraîné avec succès
+- [ ] Accuracy calculée (train et test)
+- [ ] Matrice de confusion générée
+- [ ] Comparaison de plusieurs modèles effectuée
+- [ ] Analyse des erreurs réalisée
+
+## Pour Aller Plus Loin
+
+1. Testez d'autres features (titre extrait du nom, cabine, etc.)
+2. Expérimentez avec le seuil de décision (au lieu de 0.5)
+3. Utilisez la validation croisée (voir TP2)
+4. Essayez d'autres algorithmes (SVM, Gradient Boosting)

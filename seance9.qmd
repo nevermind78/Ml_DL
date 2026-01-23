@@ -1,0 +1,955 @@
+# Séance 9: Apprentissage Non Supervisé
+
+::: {.callout-note icon=false}
+## Informations de la séance
+- **Type**: Cours
+- **Durée**: 2h
+- **Objectifs**: Obj8, Obj9
+:::
+
+## Définitions et Principes
+
+L'**apprentissage non supervisé** est un type d'apprentissage où le modèle apprend à partir de **données non étiquetées**, sans réponses connues.
+
+**Objectif principal**: Découvrir des structures, des patterns ou des regroupements naturels dans les données.
+
+::: {.callout-tip}
+## Pourquoi l'apprentissage non supervisé ?
+- Les données étiquetées sont rares ou coûteuses à obtenir
+- Exploration de données inconnues
+- Réduction de dimension pour visualisation
+- Détection d'anomalies
+:::
+
+## Clustering (Regroupement)
+
+Le **clustering** consiste à regrouper des données similaires dans des clusters (groupes).
+
+### k-means
+
+L'algorithme **k-means** est l'une des méthodes de clustering les plus populaires.
+
+**Principe**:
+
+1. Choisir k points initiaux (centroïdes)
+2. Assigner chaque point au centroïde le plus proche
+3. Recalculer les centroïdes (moyenne des points du cluster)
+4. Répéter jusqu'à convergence
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.cluster import KMeans
+import numpy as np
+
+# Données non étiquetées
+X = np.array([[1, 2], [1, 4], [1, 0],
+              [10, 2], [10, 4], [10, 0]])
+
+# Clustering avec k=2
+kmeans = KMeans(n_clusters=2, random_state=42)
+labels = kmeans.fit_predict(X)
+
+print("Labels des clusters:", labels)
+print("Centroïdes:", kmeans.cluster_centers_)
+```
+
+**Avantages**:
+
+- Simple et rapide
+- Évolutif pour grands datasets
+- Résultats faciles à interpréter
+
+**Inconvénients**:
+
+- Nécessite de spécifier k
+- Sensible aux valeurs aberrantes
+- Suppose des clusters sphériques et de taille similaire
+
+### DBSCAN (Density-Based Spatial Clustering)
+
+**DBSCAN** regroupe les points basés sur la densité.
+
+**Paramètres clés**:
+
+- **eps**: distance maximale entre deux points pour être considérés voisins
+- **min_samples**: nombre minimum de points pour former un cluster dense
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.cluster import DBSCAN
+
+# Clustering par densité
+dbscan = DBSCAN(eps=1.5, min_samples=2)
+labels = dbscan.fit_predict(X)
+
+print("Labels DBSCAN:", labels)
+# -1 = bruit (outliers)
+```
+
+**Avantages**:
+
+- Pas besoin de spécifier le nombre de clusters
+- Détecte les clusters de forme arbitraire
+- Robuste aux outliers
+
+**Inconvénients**:
+
+- Sensible aux paramètres eps et min_samples
+- Difficulté avec des densités variées
+
+### Autres méthodes
+
+- **Agglomerative Clustering**: approche hiérarchique
+- **Gaussian Mixture Models (GMM)**: modèle probabiliste
+- **Mean Shift**: basé sur la densité de noyau
+
+## Mesures de Qualité
+
+Comment évaluer la qualité d'un clustering sans labels vrais ?
+
+### Silhouette Score
+
+Mesure de cohérence intra-cluster et séparation inter-cluster.
+
+**Valeurs**:
+
+- Proche de 1: bonne séparation
+- Proche de 0: clusters se chevauchent
+- Négatif: mauvais clustering
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import silhouette_score
+
+score = silhouette_score(X, labels)
+print(f"Silhouette Score: {score:.3f}")
+```
+
+### Inertie (Elbow Method)
+
+Somme des distances carrées des points à leur centroïde.
+
+```{python}
+#| echo: true
+#| eval: false
+
+import matplotlib.pyplot as plt
+
+inertias = []
+K = range(1, 10)
+
+for k in K:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(X)
+    inertias.append(kmeans.inertia_)
+
+plt.plot(K, inertias, 'bo-')
+plt.xlabel('Nombre de clusters (k)')
+plt.ylabel('Inertie')
+plt.title('Méthode du coude (Elbow Method)')
+plt.grid(True)
+plt.show()
+```
+
+### Davies-Bouldin Index
+
+Mesure de similarité moyenne entre clusters.
+
+## Applications Réelles
+
+### Segmentation Client
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Exemple fictif de segmentation client
+import pandas as pd
+
+data = {
+    'age': [25, 30, 35, 40, 45, 50, 55, 60],
+    'revenu_annuel_k': [40, 45, 50, 80, 90, 30, 35, 25],
+    'score_depense': [8, 7, 6, 9, 8, 3, 4, 2]
+}
+
+df = pd.DataFrame(data)
+
+from sklearn.preprocessing import StandardScaler
+
+# Normalisation
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(df)
+
+# Clustering
+kmeans = KMeans(n_clusters=3, random_state=42)
+df['cluster'] = kmeans.fit_predict(X_scaled)
+
+print(df.groupby('cluster').mean())
+```
+
+### Regroupement de Documents
+
+- Groupement d'articles par thème
+- Organisation d'emails
+- Catégorisation de produits
+
+### Analyse d'Images
+
+- Segmentation d'image
+- Regroupement de pixels similaires
+- Compression d'image
+
+## Réduction de Dimension
+
+### Pourquoi réduire la dimension ?
+
+- Visualisation de données multidimensionnelles
+- Réduction du bruit
+- Accélération des algorithmes
+- Éviter le "fléau de la dimension"
+
+### PCA (Principal Component Analysis)
+
+**PCA** transforme les données en composantes orthogonales capturant la variance maximale.
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.decomposition import PCA
+import numpy as np
+
+# Données de démonstration
+np.random.seed(42)
+X = np.random.randn(100, 5)  # 100 échantillons, 5 features
+
+# PCA
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X)
+
+print(f"Variance expliquée: {pca.explained_variance_ratio_}")
+print(f"Variance totale expliquée: {sum(pca.explained_variance_ratio_):.2%}")
+
+# Visualisation
+plt.scatter(X_pca[:, 0], X_pca[:, 1])
+plt.xlabel('Première composante principale')
+plt.ylabel('Deuxième composante principale')
+plt.title('PCA - Visualisation 2D')
+plt.show()
+```
+
+### t-SNE (t-Distributed Stochastic Neighbor Embedding)
+
+Méthode non linéaire particulièrement efficace pour la visualisation.
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.manifold import TSNE
+
+tsne = TSNE(n_components=2, random_state=42)
+X_tsne = tsne.fit_transform(X)
+
+plt.scatter(X_tsne[:, 0], X_tsne[:, 1])
+plt.xlabel('t-SNE 1')
+plt.ylabel('t-SNE 2')
+plt.title('t-SNE - Visualisation 2D')
+plt.show()
+```
+
+## Exercices de Réflexion
+
+::: {.callout-warning icon=false}
+## Question 1
+Pour chacun des scénarios suivants, proposez une méthode de clustering adaptée et justifiez votre choix :
+
+a) Segmentation de clients avec des variables démographiques et comportementales
+b) Détection de fraudes dans des transactions bancaires
+c) Regroupement de documents textuels
+d) Analyse de pixels d'une image satellite
+:::
+
+::: {.callout-note collapse="true"}
+## Correction Question 1
+
+**a) Segmentation de clients:**
+
+- **Méthode recommandée**: **k-means**
+- **Justification**:
+  - Variables démographiques et comportementales → données numériques
+  - Nombre de segments généralement connu à l'avance (ex: 3-5 segments)
+  - Besoin d'interprétabilité pour le marketing
+  - Rapide et efficace sur grands volumes de clients
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Exemple de segmentation client
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+# Préparation
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(client_features)
+
+# K-means avec 4 segments
+kmeans = KMeans(n_clusters=4, random_state=42)
+segments = kmeans.fit_predict(X_scaled)
+
+# Profilage des segments
+profiles = pd.DataFrame(X_scaled, columns=feature_names)
+profiles['segment'] = segments
+print(profiles.groupby('segment').mean())
+```
+
+**b) Détection de fraudes:**
+
+- **Méthode recommandée**: **DBSCAN** ou **Isolation Forest**
+- **Justification**:
+
+  - Fraudes = anomalies (outliers)
+  - DBSCAN identifie les points de bruit (label -1)
+  - Pas besoin de connaître le nombre de types de fraude
+  - Détecte des patterns de fraude de formes variées
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.cluster import DBSCAN
+
+# DBSCAN pour détecter les anomalies
+dbscan = DBSCAN(eps=0.5, min_samples=5)
+labels = dbscan.fit_predict(transactions_features)
+
+# Points anormaux (potentielles fraudes)
+anomalies = transactions_features[labels == -1]
+print(f"Nombre de transactions suspectes: {len(anomalies)}")
+```
+
+**c) Regroupement de documents textuels:**
+
+- **Méthode recommandée**: **k-means** sur TF-IDF + **Hierarchical Clustering**
+- **Justification**:
+
+  - TF-IDF transforme texte en vecteurs numériques
+  - K-means efficace en haute dimension (nombreux mots)
+  - Hierarchical permet d'explorer la hiérarchie des thèmes
+  - Peut combiner avec topic modeling (LDA)
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+
+# Vectorisation des textes
+vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
+X_tfidf = vectorizer.fit_transform(documents)
+
+# Clustering
+kmeans = KMeans(n_clusters=5, random_state=42)
+doc_clusters = kmeans.fit_predict(X_tfidf)
+
+# Top mots par cluster
+terms = vectorizer.get_feature_names_out()
+for i in range(5):
+    center = kmeans.cluster_centers_[i]
+    top_terms = [terms[j] for j in center.argsort()[-10:]]
+    print(f"Cluster {i}: {', '.join(top_terms)}")
+```
+
+**d) Analyse de pixels d'image satellite:**
+
+- **Méthode recommandée**: **k-means** ou **Mean Shift**
+- **Justification**:
+
+  - Segmentation d'image = clustering de pixels (RGB ou multi-spectral)
+  - K-means rapide pour millions de pixels
+  - Mean Shift détecte automatiquement le nombre de segments
+  - Peut identifier zones (forêt, eau, ville, etc.)
+
+```{python}
+#| echo: true
+#| eval: false
+
+import numpy as np
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
+# Image satellite (exemple)
+# image shape: (height, width, channels)
+pixels = image.reshape(-1, image.shape[2])  # Reshape en (n_pixels, channels)
+
+# K-means sur pixels
+kmeans = KMeans(n_clusters=5, random_state=42)
+labels = kmeans.fit_predict(pixels)
+
+# Reconstruction de l'image segmentée
+segmented_image = labels.reshape(image.shape[:2])
+plt.imshow(segmented_image, cmap='tab10')
+plt.title('Segmentation de l\'image satellite')
+plt.show()
+```
+:::
+
+::: {.callout-warning icon=false}
+## Question 2
+Pour un dataset avec 10 000 échantillons et 50 features :
+
+a) Expliquez comment déterminer le nombre optimal de clusters pour k-means
+b) Proposez une approche pour visualiser la structure des clusters
+c) Quel avantage PCA peut-il apporter avant le clustering ?
+:::
+
+::: {.callout-note collapse="true"}
+## Correction Question 2
+
+**a) Déterminer le nombre optimal de clusters:**
+
+**Méthode 1: Elbow Method (Méthode du coude)**
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
+# Tester différentes valeurs de k
+inertias = []
+silhouette_scores = []
+K_range = range(2, 11)
+
+for k in K_range:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X)
+    
+    inertias.append(kmeans.inertia_)
+    silhouette_scores.append(silhouette_score(X, kmeans.labels_))
+
+# Visualisation
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+# Courbe du coude
+ax1.plot(K_range, inertias, 'bo-')
+ax1.set_xlabel('Nombre de clusters (k)')
+ax1.set_ylabel('Inertie')
+ax1.set_title('Méthode du Coude')
+ax1.grid(True)
+
+# Silhouette score
+ax2.plot(K_range, silhouette_scores, 'go-')
+ax2.set_xlabel('Nombre de clusters (k)')
+ax2.set_ylabel('Silhouette Score')
+ax2.set_title('Score Silhouette')
+ax2.grid(True)
+
+plt.show()
+
+# Le k optimal est au "coude" de la courbe d'inertie
+# ET avec un bon silhouette score
+```
+
+**Méthode 2: Gap Statistic**
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Compare l'inertie observée vs inertie sur données aléatoires
+def gap_statistic(X, k_max=10, n_refs=10):
+    gaps = []
+    for k in range(1, k_max + 1):
+        # Inertie sur données réelles
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(X)
+        real_inertia = kmeans.inertia_
+        
+        # Inertie moyenne sur données de référence
+        ref_inertias = []
+        for _ in range(n_refs):
+            X_ref = np.random.uniform(X.min(), X.max(), X.shape)
+            kmeans_ref = KMeans(n_clusters=k, random_state=42)
+            kmeans_ref.fit(X_ref)
+            ref_inertias.append(kmeans_ref.inertia_)
+        
+        gap = np.log(np.mean(ref_inertias)) - np.log(real_inertia)
+        gaps.append(gap)
+    
+    return gaps
+
+# K optimal = premier k où gap commence à décroître
+```
+
+**Méthode 3: Silhouette Analysis détaillée**
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.metrics import silhouette_samples
+import matplotlib.cm as cm
+
+for k in [2, 3, 4, 5]:
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    labels = kmeans.fit_predict(X)
+    
+    silhouette_vals = silhouette_samples(X, labels)
+    
+    plt.figure(figsize=(10, 6))
+    y_lower = 10
+    
+    for i in range(k):
+        cluster_silhouette_vals = silhouette_vals[labels == i]
+        cluster_silhouette_vals.sort()
+        
+        size = cluster_silhouette_vals.shape[0]
+        y_upper = y_lower + size
+        
+        plt.fill_betweenx(np.arange(y_lower, y_upper),
+                         0, cluster_silhouette_vals,
+                         alpha=0.7)
+        y_lower = y_upper + 10
+    
+    plt.title(f'Silhouette Plot (k={k})')
+    plt.xlabel('Coefficient Silhouette')
+    plt.ylabel('Cluster')
+    plt.axvline(x=silhouette_score(X, labels), color="red", linestyle="--")
+    plt.show()
+```
+
+**b) Visualiser la structure des clusters:**
+
+**Approche 1: PCA pour réduction 2D/3D**
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.decomposition import PCA
+
+# Réduction à 2D
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X)
+
+# Visualisation
+plt.figure(figsize=(10, 6))
+scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], 
+                     c=labels, cmap='viridis', alpha=0.6)
+plt.xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%})')
+plt.ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%})')
+plt.title('Clusters visualisés avec PCA')
+plt.colorbar(scatter, label='Cluster')
+plt.show()
+
+print(f"Variance expliquée totale: {sum(pca.explained_variance_ratio_):.2%}")
+```
+
+**Approche 2: t-SNE pour visualisation non-linéaire**
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.manifold import TSNE
+
+# t-SNE (plus lent mais meilleure visualisation)
+tsne = TSNE(n_components=2, random_state=42, perplexity=30)
+X_tsne = tsne.fit_transform(X)
+
+plt.figure(figsize=(10, 6))
+plt.scatter(X_tsne[:, 0], X_tsne[:, 1], c=labels, cmap='tab10', alpha=0.6)
+plt.title('Clusters visualisés avec t-SNE')
+plt.colorbar(label='Cluster')
+plt.show()
+```
+
+**Approche 3: Pairplot des features importantes**
+
+```{python}
+#| echo: true
+#| eval: false
+
+import seaborn as sns
+
+# Sélectionner top features par variance
+from sklearn.feature_selection import VarianceThreshold
+
+selector = VarianceThreshold(threshold=0.5)
+X_selected = selector.fit_transform(X)
+
+# Pairplot avec 4-5 features les plus variables
+df_plot = pd.DataFrame(X_selected[:, :5], columns=[f'F{i}' for i in range(5)])
+df_plot['cluster'] = labels
+
+sns.pairplot(df_plot, hue='cluster', palette='tab10')
+plt.show()
+```
+
+**c) Avantages de PCA avant le clustering:**
+
+**1. Réduction de dimension → Efficacité computationnelle**
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Sans PCA: 50 features
+import time
+
+start = time.time()
+kmeans_full = KMeans(n_clusters=5, random_state=42)
+kmeans_full.fit(X)  # X: (10000, 50)
+time_full = time.time() - start
+
+# Avec PCA: 10 features (gardant 95% de variance)
+pca = PCA(n_components=0.95)  # Garde 95% de variance
+X_pca = pca.fit_transform(X)  # X_pca: (10000, ~10)
+
+start = time.time()
+kmeans_pca = KMeans(n_clusters=5, random_state=42)
+kmeans_pca.fit(X_pca)
+time_pca = time.time() - start
+
+print(f"Temps sans PCA: {time_full:.2f}s")
+print(f"Temps avec PCA: {time_pca:.2f}s")
+print(f"Accélération: {time_full/time_pca:.1f}x")
+print(f"Dimensions réduites: {X.shape[1]} → {X_pca.shape[1]}")
+```
+
+**2. Réduction du bruit**
+
+```{python}
+#| echo: true
+#| eval: false
+
+# PCA élimine les composantes de faible variance (souvent du bruit)
+pca_full = PCA()
+pca_full.fit(X)
+
+# Afficher la variance par composante
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(range(1, len(pca_full.explained_variance_ratio_) + 1),
+         pca_full.explained_variance_ratio_, 'bo-')
+plt.xlabel('Composante')
+plt.ylabel('Variance expliquée')
+plt.title('Scree Plot')
+plt.grid(True)
+
+plt.subplot(1, 2, 2)
+plt.plot(range(1, len(pca_full.explained_variance_ratio_) + 1),
+         np.cumsum(pca_full.explained_variance_ratio_), 'ro-')
+plt.xlabel('Nombre de composantes')
+plt.ylabel('Variance cumulée')
+plt.axhline(y=0.95, color='g', linestyle='--', label='95%')
+plt.title('Variance Cumulée')
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
+
+# Garder les composantes qui expliquent 95% de la variance
+# → élimine le bruit des dernières composantes
+```
+
+**3. Évite la malédiction de la dimensionnalité**
+
+```{python}
+#| echo: true
+#| eval: false
+
+# En haute dimension, les distances deviennent moins significatives
+from scipy.spatial.distance import pdist, squareform
+
+# Calcul des distances moyennes
+distances_full = pdist(X[:100])  # Sur 100 échantillons pour rapidité
+distances_pca = pdist(X_pca[:100])
+
+print(f"Distance moyenne (50D): {np.mean(distances_full):.2f}")
+print(f"Distance moyenne (10D): {np.mean(distances_pca):.2f}")
+print(f"Écart-type distances (50D): {np.std(distances_full):.2f}")
+print(f"Écart-type distances (10D): {np.std(distances_pca):.2f}")
+
+# En dimension réduite, les distances sont plus discriminantes
+```
+
+**4. Décorrélation des features**
+
+```{python}
+#| echo: true
+#| eval: false
+
+# PCA produit des composantes non-corrélées
+# → Améliore k-means qui suppose indépendance
+
+# Corrélation avant PCA
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+sns.heatmap(np.corrcoef(X.T), cmap='coolwarm', center=0,
+            cbar_kws={'label': 'Corrélation'})
+plt.title('Corrélations avant PCA')
+
+# Corrélation après PCA
+plt.subplot(1, 2, 2)
+sns.heatmap(np.corrcoef(X_pca.T), cmap='coolwarm', center=0,
+            cbar_kws={'label': 'Corrélation'})
+plt.title('Corrélations après PCA')
+
+plt.tight_layout()
+plt.show()
+
+# Après PCA: corrélations nulles entre composantes
+```
+
+**Résumé des avantages:**
+
+| Avantage | Description | Impact |
+|----------|-------------|--------|
+| **Efficacité** | 50 → 10 dimensions | 5-10x plus rapide |
+| **Débruitage** | Élimine variance faible | Clusters plus nets |
+| **Distances** | Plus discriminantes en faible dim | Meilleur clustering |
+| **Décorrélation** | Features indépendantes | K-means plus efficace |
+| **Visualisation** | Réduction à 2-3D | Interprétation facile |
+:::
+
+::: {.callout-warning icon=false}
+## Question 3
+Implémentez un pipeline complet de clustering sur le dataset Iris :
+
+1. Chargez les données (ignorer les labels pour l'apprentissage non supervisé)
+2. Appliquez PCA pour réduire à 2 dimensions
+3. Testez k-means avec k=2,3,4 et comparez les résultats
+4. Visualisez les clusters obtenus
+5. Calculez le silhouette score pour chaque k
+:::
+
+::: {.callout-note collapse="true"}
+## Correction Question 3
+
+```{python}
+#| echo: true
+#| eval: false
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn import datasets
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, adjusted_rand_score
+
+# 1. Chargement des données (SANS utiliser les labels pour clustering)
+print("=" * 70)
+print("PIPELINE COMPLET DE CLUSTERING - DATASET IRIS")
+print("=" * 70)
+
+iris = datasets.load_iris()
+X = iris.data  # Features seulement (ignorer iris.target)
+feature_names = iris.feature_names
+true_labels = iris.target  # Gardé seulement pour évaluation finale
+
+print(f"\n1. Chargement des données:")
+print(f"   Dimensions: {X.shape}")
+print(f"   Features: {feature_names}")
+
+# Normalisation (important avant PCA)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+print(f"   ✓ Données normalisées")
+
+# 2. Application de PCA pour réduction à 2D
+print(f"\n2. Réduction de dimension avec PCA:")
+
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
+
+print(f"   Variance expliquée par composante: {pca.explained_variance_ratio_}")
+print(f"   Variance totale expliquée: {sum(pca.explained_variance_ratio_):.2%}")
+print(f"   Dimensions: {X.shape[1]}D → {X_pca.shape[1]}D")
+
+# Visualisation des données après PCA (sans clustering)
+plt.figure(figsize=(10, 6))
+scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], 
+                     c=true_labels, cmap='viridis', 
+                     alpha=0.6, edgecolors='w')
+plt.xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)')
+plt.ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)')
+plt.title('Dataset Iris après PCA (coloré par vraies classes)')
+plt.colorbar(scatter, label='Vraie classe')
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# 3. Test de k-means avec k=2,3,4
+print(f"\n3. Clustering k-means avec différentes valeurs de k:")
+print("-" * 70)
+
+K_values = [2, 3, 4]
+results = []
+
+for k in K_values:
+    # Clustering
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    labels = kmeans.fit_predict(X_pca)
+    
+    # Métriques
+    inertia = kmeans.inertia_
+    silhouette = silhouette_score(X_pca, labels)
+    
+    # Comparaison avec vraies classes (juste pour curiosité)
+    ari = adjusted_rand_score(true_labels, labels)
+    
+    results.append({
+        'k': k,
+        'Inertie': inertia,
+        'Silhouette': silhouette,
+        'ARI (vs vrai)': ari,
+        'labels': labels,
+        'centroids': kmeans.cluster_centers_
+    })
+    
+    print(f"\nk = {k}:")
+    print(f"   Inertie: {inertia:.2f}")
+    print(f"   Silhouette Score: {silhouette:.3f}")
+    print(f"   Taille des clusters: {np.bincount(labels)}")
+    print(f"   ARI (comparaison avec vraies classes): {ari:.3f}")
+
+# DataFrame des résultats
+df_results = pd.DataFrame([{k: v for k, v in r.items() if k not in ['labels', 'centroids']} 
+                          for r in results])
+print(f"\n📊 Tableau récapitulatif:")
+print(df_results.to_string(index=False))
+
+# Meilleur k selon silhouette
+best_k = df_results.loc[df_results['Silhouette'].idxmax(), 'k']
+print(f"\n⭐ Meilleur k selon Silhouette Score: {best_k}")
+
+# 4. Visualisation des clusters pour chaque k
+print(f"\n4. Visualisation des clusters:")
+
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+for idx, result in enumerate(results):
+    k = result['k']
+    labels = result['labels']
+    centroids = result['centroids']
+    ax = axes[idx]
+    # Scatter plot des points
+    scatter = ax.scatter(X_pca[:, 0], X_pca[:, 1], 
+                        c=labels, cmap='tab10', 
+                        alpha=0.6, edgecolors='w', s=50)
+    
+    # Centroïdes
+    ax.scatter(centroids[:, 0], centroids[:, 1], 
+              c='red', marker='X', s=200, 
+              edgecolors='black', linewidths=2,
+              label='Centroïdes')
+    
+    ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%})')
+    ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%})')
+    ax.set_title(f'k={k} (Silhouette={result["Silhouette"]:.3f})')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    
+    # Colorbar
+    plt.colorbar(scatter, ax=ax, label='Cluster')
+
+plt.tight_layout()
+plt.show()
+
+# 5. Analyse approfondie du meilleur k
+print(f"\n5. Analyse détaillée pour k={best_k}:")
+print("-" * 70)
+
+best_result = [r for r in results if r['k'] == best_k][0]
+best_labels = best_result['labels']
+
+# Profilage des clusters
+print(f"\nProfilage des clusters (features originales):")
+
+df_analysis = pd.DataFrame(X, columns=feature_names)
+df_analysis['Cluster'] = best_labels
+
+cluster_profiles = df_analysis.groupby('Cluster').agg(['mean', 'std'])
+print(cluster_profiles)
+
+# Heatmap des caractéristiques par cluster
+cluster_means = df_analysis.groupby('Cluster').mean()
+
+plt.figure(figsize=(10, 6))
+sns.heatmap(cluster_means.T, annot=True, fmt='.2f', cmap='YlOrRd',
+            cbar_kws={'label': 'Valeur moyenne'})
+plt.xlabel('Cluster')
+plt.ylabel('Feature')
+plt.title(f'Profil des {best_k} clusters (valeurs moyennes)')
+plt.tight_layout()
+plt.show()
+
+# Comparaison avec les vraies classes (curiosité académique)
+print(f"\n📈 Comparaison avec les vraies espèces d'Iris:")
+print("(Note: Le clustering est NON SUPERVISÉ, cette comparaison est")
+print(" juste pour comprendre ce que l'algorithme a trouvé)")
+
+confusion_unsupervised = pd.crosstab(
+    pd.Series(true_labels, name='Vraie espèce'),
+    pd.Series(best_labels, name='Cluster trouvé')
+)
+print(confusion_unsupervised)
+
+# Conclusion
+print(f"\n" + "=" * 70)
+print("CONCLUSION")
+print("=" * 70)
+print(f"✓ PCA a réduit les données de 4D à 2D")
+print(f"✓ {sum(pca.explained_variance_ratio_):.1%} de variance préservée")
+print(f"✓ K optimal selon silhouette: {best_k}")
+print(f"✓ Silhouette score: {best_result['Silhouette']:.3f}")
+print(f"✓ Les clusters correspondent {'assez bien' if best_result['ARI (vs vrai)'] > 0.7 else 'partiellement'} aux vraies espèces")
+print(f"  (ARI = {best_result['ARI (vs vrai)']:.3f})")
+```
+
+**Résultat attendu:**
+
+Le pipeline devrait révéler que:
+
+- **k=3** est optimal (correspond aux 3 espèces d'Iris)
+- Le silhouette score sera autour de 0.5-0.6
+- PCA capture environ 95% de la variance en 2D
+- Les clusters trouvés correspondent assez bien aux vraies espèces
+- Une espèce (Setosa) sera bien séparée, les deux autres se chevaucheront un peu
+:::
+
+## Résumé de la Séance
+
+::: {.callout-important icon=false}
+## Points clés à retenir
+
+1. **Apprentissage non supervisé** = découvrir des patterns dans des données non étiquetées
+2. **Clustering** = regrouper des données similaires (k-means, DBSCAN, hiérarchique)
+3. **Mesures de qualité** : silhouette score, inertie, Davies-Bouldin
+4. **Réduction de dimension** : PCA (linéaire), t-SNE (non-linéaire)
+5. **Applications** : segmentation client, analyse de documents, traitement d'image
+6. **Défis** : choix du nombre de clusters, qualité sans vérité terrain
+:::
+
+## Lectures Complémentaires
+
+1. Géron, A. (2019) - Chapitre 9: Unsupervised Learning Techniques
+2. [Scikit-learn Clustering Documentation](https://scikit-learn.org/stable/modules/clustering.html)
+3. [Visualizing Data using t-SNE](https://jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf)</parameter>
