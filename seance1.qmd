@@ -104,6 +104,7 @@ Le modèle apprend à partir de **données étiquetées** (avec réponses connue
 :::
 
 **Tâches principales**:
+
 - **Classification**: prédire une catégorie (spam/non spam, chat/chien)
 - **Régression**: prédire une valeur continue (prix maison, température)
 
@@ -133,6 +134,7 @@ Le modèle apprend à partir de **données non étiquetées** (sans réponses).
 :::
 
 **Tâches principales**:
+
 - **Clustering**: regrouper des données similaires
 - **Réduction de dimension**: simplifier les données
 - **Détection d'anomalies**: identifier des points inhabituels
@@ -168,6 +170,7 @@ L'agent apprend par **essai-erreur** en interagissant avec un environnement.
 :::
 
 **Composants**:
+
 - **Agent**: celui qui apprend
 - **Environnement**: le monde dans lequel l'agent évolue
 - **Actions**: ce que l'agent peut faire
