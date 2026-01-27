@@ -4,7 +4,7 @@ docs/
 _site/
 _book/
 .quarto
-
+totodo.txt
 # Python
 __pycache__/
 *.py[cod]
