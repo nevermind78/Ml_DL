@@ -100,7 +100,7 @@ Modèle qui prend des décisions basées sur des questions successives.
 L'arbre divise l'espace des caractéristiques en régions par des questions binaires.
 
 
-**Diagramme mermaid (conversion échouée):**
+**Diagramme :**
 ```{mermaid}
 graph TD
     A[Age > 30?] -->|Oui| B[Revenu > 50k?]
