@@ -596,13 +596,14 @@ P(Ham | gratuit, argent) $\propto$ 0 × 0 × 0.4 = 0
 | **Focus** | Erreurs aléatoires | Erreurs résiduelles |
 
 
-**Diagramme mermaid (conversion échouée):**
-```
+**Diagramme :**
+
+```{mermaid}
 graph LR
     A[Random Forest] --> B[Arbre 1]
     A --> C[Arbre 2]
     A --> D[Arbre N]
-    B --> E[V...
+    B --> E[Vote]
 ```
 
 
