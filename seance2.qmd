@@ -479,15 +479,80 @@ plt.show()
 Implémentez une régression logistique sur le dataset Iris et analysez les coefficients appris. Que représentent-ils?
 :::
 
+::: {.callout-note collapse="true"}
+
+## Réponse
+
+**Code d'implémentation :**
+
+```python
+from sklearn.datasets import load_iris
+from sklearn.linear_model import LogisticRegression
+
+# Chargement et entraînement
+iris = load_iris()
+X, y = iris.data, iris.target
+log_reg = LogisticRegression(max_iter=1000)
+log_reg.fit(X, y)
+
+# Analyse des coefficients
+print(f"Coefficients (W): \n{log_reg.coef_}")
+print(f"Intercept (b): {log_reg.intercept_}")
+
+```
+
+**Explication des coefficients :**
+
+* **Signification** : Chaque coefficient  représente l'importance d'une caractéristique (feature) pour prédire une classe donnée.
+* **Direction** : Un coefficient positif augmente la probabilité que l'instance appartienne à la classe, tandis qu'un coefficient négatif la diminue.
+* **Ampleur** : Plus la valeur absolue du coefficient est élevée, plus la caractéristique a un impact déterminant sur la décision du modèle.
+:::
+
 ::: {.callout-warning icon=false}
 ## Exercice 2
 Comparez les performances de Decision Tree vs Random Forest sur le dataset digits de sklearn. Expliquez les différences observées.
 :::
 
+::: {.callout-note collapse="true"}
+
+## Réponse 
+
+**Comparaison théorique et pratique :**
+
+1. **Performance** : Le **Random Forest** obtient généralement une meilleure précision (accuracy) que l'arbre seul car il combine les prédictions de nombreux arbres, réduisant ainsi les erreurs aléatoires.
+2. **Stabilité** : Un **Decision Tree** est très sensible aux petites variations des données (variance élevée). Le Random Forest stabilise cela par échantillonnage (bagging).
+3. **Sur-apprentissage (Overfitting)** : L'arbre de décision a tendance à mémoriser le bruit des données s'il n'est pas limité en profondeur. Le Random Forest limite ce risque en moyennant les résultats de plusieurs arbres entraînés sur des sous-ensembles différents.
+:::
+
+
+
 ::: {.callout-warning icon=false}
 ## Exercice 3
 Pour un problème de détection de fraude bancaire, quel algorithme recommanderiez-vous et pourquoi? Considérez les aspects: interprétabilité, temps réel, déséquilibre des classes.
 :::
+
+::: {.callout-note collapse="true"}
+
+## Réponse 
+
+Pour la détection de fraude, je recommanderais le **Random Forest** ou le **XGBoost** (méthodes d'ensemble), pour les raisons suivantes :
+
+1. **Interprétabilité** : Bien que moins direct qu'un arbre unique, le Random Forest permet d'extraire l'**importance des variables**, ce qui est crucial pour comprendre quels facteurs (montant, lieu, heure) déclenchent une alerte de fraude.
+2. **Déséquilibre des classes** : La fraude est rare (classe minoritaire). Ces algorithmes gèrent mieux les données déséquilibrées grâce à des techniques de pondération des classes.
+3. **Temps réel** : Une fois entraîné, la prédiction d'un Random Forest est très rapide, permettant de valider ou bloquer une transaction en quelques millisecondes.
+4. **Robustesse** : Ces modèles sont moins sensibles aux valeurs aberrantes (outliers) souvent présentes dans les données financières.
+:::
+
+
+
+
+
+
+
+
+
+
+
 
 ## Lectures Complémentaires
 
