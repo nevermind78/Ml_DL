@@ -309,6 +309,7 @@ Expliquez comment adapter la régression logistique pour un problème multiclass
 ### 1. One-vs-Rest (OvR) ou One-vs-All (OvA)
 
 **Principe:**
+
 - Entraîner K modèles binaires (K = nombre de classes)
 - Chaque modèle sépare une classe vs toutes les autres
 - Prédiction: choisir la classe avec la probabilité la plus élevée
@@ -333,6 +334,7 @@ ovr_model.fit(X_train, y_train)
 ### 2. Softmax (ou Multinomial)
 
 **Principe:**
+
 - Un seul modèle qui produit K probabilités (une par classe)
 - Utilise la fonction softmax au lieu de sigmoid
 - Les probabilités somment à 1
@@ -557,10 +559,12 @@ print(f"\nPrédiction: {'Spam' if p_spam_given_words > p_ham_given_words else 'H
 **Étape 2: Probabilités conditionnelles**
 
 Pour Spam:
+
 - P(gratuit|Spam) = 3/3 = 1.0
 - P(argent|Spam) = 2/3 $\approx$ 0.67
 
 Pour Ham:
+
 - P(gratuit|Ham) = 0/2 = 0
 - P(argent|Ham) = 0/2 = 0
 
