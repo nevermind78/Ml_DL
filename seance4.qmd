@@ -51,6 +51,7 @@ $$H(S) = -\sum_{i=1}^{c} p_i \log_2(p_i)$$
 $$IG(S, A) = H(S) - \sum_{v \in Values(A)} \frac{|S_v|}{|S|} H(S_v)$$
 
 où:
+
 - $S$ = ensemble de données
 - $A$ = attribut
 - $c$ = nombre de classes
