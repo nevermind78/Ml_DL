@@ -571,6 +571,7 @@ Pour Ham:
 **Étape 3: Application de Bayes**
 
 P(Spam | gratuit, argent) $\propto$ 1.0 × 0.67 × 0.6 = 0.4
+
 P(Ham | gratuit, argent) $\propto$ 0 × 0 × 0.4 = 0
 
 **Prédiction: Spam** (avec 100% de confiance)
@@ -696,14 +697,7 @@ Pour chacun des scénarios suivants, recommandez un algorithme et justifiez:
 3. **Classification d'images** (50000 images, haute dimension, GPU disponible)
 4. **Prédiction de churn** (10000 clients, features mixtes, besoin de probabilités calibrées)
 5. **Classification de textes** (emails spam, 100000 emails, features = mots)
-::: {.callout-note collapse="true"}
-
-<function_calls>
-<invoke name="artifacts">
-<parameter name="command">update</parameter>
-<parameter name="id">seance4</parameter>
-<parameter name="old_str">5. **Classification de textes** (emails spam</parameter>
-<parameter name="new_str">5. **Classification de textes** (emails spam, 100000 emails, features = mots)
+:::
 
 ::: {.callout-note collapse="true"}
 ## Solution Exercice Final
@@ -760,7 +754,7 @@ Pour chacun des scénarios suivants, recommandez un algorithme et justifiez:
   - Probabilités natives
   - Alternative: Régression Logistique
 :::
-:::
+
 
 ## Résumé du TD
 
