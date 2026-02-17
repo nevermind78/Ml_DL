@@ -228,6 +228,7 @@ $$\text{Recall} = \frac{TP}{TP + FN}$$
 **Question répondue**: "Parmi tous les cas réellement positifs, combien ai-je détectés?"
 
 **Interprétation**:
+
 - Haut recall → Peu de faux négatifs
 - Important quand le coût d'un FN est élevé
 
@@ -253,11 +254,12 @@ recall = tp / (tp + fn)
 Il existe généralement un **compromis** entre Precision et Recall:
 
 
-**Diagramme mermaid (conversion échouée):**
-```
+**Diagramme mermaid :**
+```{mermaid}
 graph LR
-    A[Seuil bas<br/>0.3] --> B[Haute Recall<br/>Basse Precision]
-    C[Seuil moyen<br/>0.5]...
+    A[Seuil bas0.3] --> B[Haute RecallBasse Precision]
+    C[Seuil moyen0.5] --> D[Équilibre]
+    E[Seuil haut0.7] --> F[Haute PrecisionBasse Recall]
 ```
 
 
@@ -950,6 +952,7 @@ Trois data scientists ont entraîné des modèles pour détecter des défaillanc
 **Contexte:** 2% de défaillances, coût FN = 10,000€, coût FP = 100€
 
 **Questions:**
+
 1. Quel modèle recommandez-vous?
 2. Justifiez votre choix avec calculs de coûts
 3. Que révèle l'Accuracy élevée du modèle C?
