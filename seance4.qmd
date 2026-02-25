@@ -42,7 +42,7 @@ Considérez le dataset suivant pour prédire si un client va acheter un ordinate
 4. Dessinez l'arbre de décision complet
 
 ::: {.callout-tip collapse="true"}
-## Rappels - Formules
+## Rappels - Formules et Algorithme
 
 **Entropie:**
 $$H(S) = -\sum_{i=1}^{c} p_i \log_2(p_i)$$
@@ -57,6 +57,18 @@ où:
 - $c$ = nombre de classes
 - $p_i$ = proportion de la classe $i$
 - $S_v$ = sous-ensemble où $A = v$
+
+**Algorithme ID3 (construction de l'arbre) :**
+
+1. Si tous les exemples appartiennent à la même classe → créer une **feuille** avec cette classe
+2. Si plus aucun attribut à tester → créer une **feuille** avec la classe majoritaire
+3. Sinon :
+   - Calculer $IG(S, A)$ pour chaque attribut $A$
+   - Choisir l'attribut $A^*$ avec le **gain d'information maximal**
+   - Créer un **nœud** de décision sur $A^*$
+   - Pour chaque valeur $v$ de $A^*$ :
+     - Créer une branche pour $S_v = \{x \in S \mid A^*(x) = v\}$
+     - **Appliquer récursivement** l'algorithme sur $S_v$ sans l'attribut $A^*$
 :::
 
 ::: {.callout-note collapse="true"}
@@ -590,6 +602,9 @@ P(Ham | gratuit, argent) $\propto$ 0 × 0 × 0.4 = 0
 ::: {.callout-note collapse="true"}
 ## Solution Exercice 5.1
 
+📎 **Lien du Slide  :** [Gradient Boosting — Classification](https://nevermind78.github.io/AN_slides/GB_C.html#/title-slide)
+
+
 **1. Différence Bagging vs Boosting:**
 
 | Aspect | Random Forest (Bagging) | Gradient Boosting |
@@ -806,3 +821,6 @@ Préparez-vous pour le **TD2 sur les Critères d'Évaluation** où nous approfon
 2. [StatQuest: Decision Trees](https://www.youtube.com/watch?v=7VeUPuFGJHk)
 3. [XGBoost Documentation](https://xgboost.readthedocs.io/)</parameter>
 
+## Correction
+
+📎 **Lien de la correction  :** [TD1 — Modèles de Classification de Base](https://nevermind78.github.io/AN_slides/td1_corr_eng.html#/title-slide)

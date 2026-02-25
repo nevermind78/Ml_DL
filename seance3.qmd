@@ -18,6 +18,8 @@
 4. Entraîner un modèle de classification binaire
 5. Évaluer les performances du modèle
 
+📎 **Lien du TP :** [TP1 — Pipeline Classification](https://nevermind78.github.io/AN_slides/TP1_Pipeline_Classification_pyodide.html#/title-slide)
+
 ## 1. Configuration de l'Environnement
 
 ```{python}
