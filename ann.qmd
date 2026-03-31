@@ -1,0 +1,174 @@
+---
+title: "TikZ Example"
+filters:
+  - tikz
+format:
+  html: {}
+tikz:
+  cache: false
+  save-tex: true
+  tex-dir: tikz-tex
+  format: png
+  density: 300
+  latex: "C:/Users/abdal/AppData/Roaming/TinyTeX/bin/windows/pdflatex.exe"  
+---
+
+# Simple TikZ Diagram
+
+Here is a simple TikZ diagram without additional packages or complex features:
+
+```{.tikz}
+%%| filename: stick-figure
+%%| caption: A Stick Figure
+\begin{tikzpicture}[
+    input neuron/.style={
+        circle,
+        draw=blue!60,
+        fill=blue!20,
+        thick,
+        minimum size=1cm,
+        inner sep=0pt
+    },
+    bias neuron/.style={
+        circle,
+        draw=gray!60,
+        fill=gray!20,
+        thick,
+        minimum size=1cm,
+        inner sep=0pt
+    },
+    sum neuron/.style={
+        circle,
+        draw=purple!80,
+        fill=purple!10,
+        thick,
+        minimum size=1.2cm,
+        inner sep=0pt
+    },
+    activation neuron/.style={
+        rectangle,
+        draw=orange!70,
+        fill=orange!20,
+        thick,
+        minimum width=1.8cm,
+        minimum height=1cm,
+        inner sep=0pt
+    },
+    output neuron/.style={
+        circle,
+        draw=green!60,
+        fill=green!25,
+        thick,
+        minimum size=1cm,
+        inner sep=0pt
+    },
+    connection/.style={
+        ->,
+        >=stealth,
+        gray!60,
+        line width=0.5pt
+    },
+    weight/.style={
+        connection,
+        font=\small,
+        auto,
+        swap
+    }
+]
+
+\def\layersep{3}
+\def\nodesep{1.5}
+
+%% --- Entrées ---
+\node[input neuron] (X1) at (0, 2*\nodesep) {$x_1$};
+\node[input neuron] (X2) at (0, 1*\nodesep) {$x_2$};
+\node[input neuron] (X3) at (0, 0)         {$x_3$};
+
+%% --- Biais ---
+\node[bias neuron] (B) at (0, -1) {$b$};
+
+%% --- Somme ---
+\node[sum neuron] (S) at (\layersep, 1*\nodesep) {$\Sigma$};  % Contenu explicite
+
+%% --- Activation ---
+\node[activation neuron] (A) at (2*\layersep, 1*\nodesep) {Activation};
+
+%% --- Sortie ---
+\node[output neuron] (Y) at (3*\layersep, 1*\nodesep) {$y$};
+
+%% --- Connexions entrées -> somme ---
+\draw[connection] (X1) -- node[weight, above] {$w_1$} (S);
+\draw[connection] (X2) -- node[weight, above] {$w_2$} (S);
+\draw[connection] (X3) -- node[weight, above] {$w_3$} (S);
+\draw[connection] (B)  -- node[weight, above left] {biais} (S);
+
+%% --- Somme -> activation ---
+\draw[connection] (S) -- (A);
+
+%% --- Activation -> sortie ---
+\draw[connection] (A) -- (Y);
+
+%% --- Étiquettes de couches ---
+\node[font=\small\bfseries, text=blue!70]      at (0,        -2) {Entrées};
+\node[font=\small\bfseries, text=purple!80]    at (\layersep,  -2) {Somme};
+\node[font=\small\bfseries, text=orange!70]    at (2*\layersep,-2) {Activation};
+\node[font=\small\bfseries, text=green!60]     at (3*\layersep,-2) {Sortie};
+
+\end{tikzpicture}
+```
+
+
+## All the features
+
+Now, let's look at a more complex example [@fig-example] that uses additional packages and demonstrates more features.
+
+
+::: {#fig-example .test-class}
+```{.tikz}
+%%| filename: my-fancy-diagram
+%%| fig-attr:
+%%|   id: fig-my-fancy-diagram
+%%|   class: my-class
+%%| additionalPackages: \usepackage{adjustbox}
+
+\usetikzlibrary{arrows, arrows.meta}
+\tikzset{
+  int/.style={
+    draw,
+    fill=blue!20,
+    minimum size=2em,
+    line width=0.5pt
+  },
+  init/.style={
+    pin edge={to-, black, line width=1pt}
+  },
+  % Define a global path style
+  every path/.style={
+    line width=1pt,
+    >=Latex
+  }
+}
+\begin{tikzpicture}[
+    scale=2,
+    transform shape,
+    node distance=2.5cm,
+    auto,
+    >=latex', % Arrowhead style
+    line width=0.5pt % Base line width
+  ]
+  \node [int, pin={[init]above:$v_0$}] (a) {$\frac{1}{s}$};
+  \node (b) [left of=a, node distance=2cm, coordinate] {a};
+  \node [int, pin={[init]above:$p_0$}] at (0,0) (c)
+    [right of=a] {$\frac{1}{s}$};
+  \node [coordinate] (end) [right of=c, node distance=2cm]{};
+
+  % Draw paths with arrows
+  \path[->] (b) edge node {$a$} (a);
+  \path[->] (a) edge node {$v$} (c);
+  \draw[->] (c) edge node {$p$} (end);
+\end{tikzpicture}
+
+```
+
+A fancy TikZ example
+:::

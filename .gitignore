@@ -34,3 +34,5 @@ seance10_files/
 seance8_files/
 seance9_files/
 **/*.quarto_ipynb
+
+/.luarc.json

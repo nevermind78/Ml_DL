@@ -1,0 +1,932 @@
+# Séance 12: TP5 - Réseaux de Neurones avec Keras/TensorFlow
+
+::: {.callout-note icon=false}
+## Informations de la séance
+- **Type**: TP
+- **Durée**: 2h
+- **Objectifs**: Obj12, Obj13, Obj17
+:::
+
+## Objectifs du TP
+
+À la fin de ce TP, vous serez capable de:
+
+1. Construire un réseau de neurones multicouche avec Keras
+2. Choisir les bonnes fonctions d'activation
+3. Entraîner un modèle avec différents optimiseurs
+4. Visualiser les courbes d'apprentissage (loss/accuracy)
+5. Appliquer des techniques de régularisation
+6. Optimiser les hyperparamètres
+
+## Configuration de l'Environnement
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Installation (si nécessaire)
+# !pip install tensorflow numpy pandas matplotlib seaborn scikit-learn
+
+# Imports
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# TensorFlow et Keras
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.utils import to_categorical
+
+# Scikit-learn
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix
+
+# Configuration
+plt.style.use('default')
+sns.set_palette("husl")
+np.random.seed(42)
+tf.random.set_seed(42)
+
+print(f"TensorFlow version: {tf.__version__}")
+print(f"Keras version: {keras.__version__}")
+print("✅ Environnement prêt!")
+```
+
+## Dataset 1: Classification Binaire - Iris (2 classes)
+
+### Préparation des Données
+
+```{python}
+#| echo: true
+#| eval: false
+
+from sklearn.datasets import load_iris
+
+# Chargement
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+# Simplification: 2 classes seulement (binaire)
+# Classe 0 vs Classes 1 et 2
+binary_mask = y != 0  # True pour classes 1 et 2
+X_binary = X[binary_mask]
+y_binary = (y[binary_mask] == 2).astype(int)  # 0 = versicolor, 1 = virginica
+
+print(f"📊 Dataset Iris Binaire:")
+print(f"Dimensions: {X_binary.shape}")
+print(f"Distribution des classes: {np.bincount(y_binary)}")
+
+# Split train/test
+X_train, X_test, y_train, y_test = train_test_split(
+    X_binary, y_binary,
+    test_size=0.2,
+    random_state=42,
+    stratify=y_binary
+)
+
+# Normalisation
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print(f"\nTrain set: {X_train_scaled.shape}")
+print(f"Test set: {X_test_scaled.shape}")
+```
+
+### Construction du Premier Réseau
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Architecture simple: 4 -> 8 -> 4 -> 1
+model_simple = Sequential([
+    Dense(8, activation='relu', input_shape=(4,), name='hidden1'),
+    Dense(4, activation='relu', name='hidden2'),
+    Dense(1, activation='sigmoid', name='output')
+], name='Simple_Binary_Classifier')
+
+# Résumé du modèle
+model_simple.summary()
+
+# Compilation
+model_simple.compile(
+    optimizer='adam',
+    loss='binary_crossentropy',
+    metrics=['accuracy']
+)
+```
+
+### Entraînement
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Entraînement
+print("\n🚀 Début de l'entraînement...")
+
+history = model_simple.fit(
+    X_train_scaled, y_train,
+    validation_split=0.2,  # 20% du train pour validation
+    epochs=100,
+    batch_size=8,
+    verbose=1
+)
+
+print("\n✅ Entraînement terminé!")
+```
+
+### Visualisation des Courbes d'Apprentissage
+
+```{python}
+#| echo: true
+#| eval: false
+
+def plot_training_history(history, title="Training History"):
+    """Visualise loss et accuracy"""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
+    
+    # Loss
+    ax1.plot(history.history['loss'], label='Train Loss', linewidth=2)
+    ax1.plot(history.history['val_loss'], label='Val Loss', linewidth=2)
+    ax1.set_xlabel('Epoch')
+    ax1.set_ylabel('Loss')
+    ax1.set_title(f'{title} - Loss')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    
+    # Accuracy
+    ax2.plot(history.history['accuracy'], label='Train Accuracy', linewidth=2)
+    ax2.plot(history.history['val_accuracy'], label='Val Accuracy', linewidth=2)
+    ax2.set_xlabel('Epoch')
+    ax2.set_ylabel('Accuracy')
+    ax2.set_title(f'{title} - Accuracy')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.show()
+
+# Visualisation
+plot_training_history(history, "Modèle Simple")
+```
+
+### Évaluation
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Évaluation sur test set
+test_loss, test_accuracy = model_simple.evaluate(X_test_scaled, y_test, verbose=0)
+
+print(f"\n📊 Résultats sur Test Set:")
+print(f"Loss: {test_loss:.4f}")
+print(f"Accuracy: {test_accuracy:.4f} ({test_accuracy*100:.2f}%)")
+
+# Prédictions
+y_pred_proba = model_simple.predict(X_test_scaled)
+y_pred = (y_pred_proba > 0.5).astype(int).flatten()
+
+# Matrice de confusion
+cm = confusion_matrix(y_test, y_pred)
+
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=['Versicolor', 'Virginica'],
+            yticklabels=['Versicolor', 'Virginica'])
+plt.ylabel('Vraie Classe')
+plt.xlabel('Prédiction')
+plt.title('Matrice de Confusion')
+plt.tight_layout()
+plt.show()
+
+# Rapport de classification
+print("\n📋 Rapport de Classification:")
+print(classification_report(y_test, y_pred, 
+                          target_names=['Versicolor', 'Virginica']))
+```
+
+## Comparaison d'Optimiseurs
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Test de différents optimiseurs
+optimizers_dict = {
+    'SGD': SGD(learning_rate=0.01),
+    'SGD + Momentum': SGD(learning_rate=0.01, momentum=0.9),
+    'Adam': Adam(learning_rate=0.001),
+    'Adam (lr=0.01)': Adam(learning_rate=0.01)
+}
+
+histories = {}
+
+for opt_name, optimizer in optimizers_dict.items():
+    print(f"\n🔧 Entraînement avec {opt_name}...")
+    
+    # Nouveau modèle
+    model = Sequential([
+        Dense(8, activation='relu', input_shape=(4,)),
+        Dense(4, activation='relu'),
+        Dense(1, activation='sigmoid')
+    ])
+    
+    # Compilation
+    model.compile(
+        optimizer=optimizer,
+        loss='binary_crossentropy',
+        metrics=['accuracy']
+    )
+    
+    # Entraînement
+    history = model.fit(
+        X_train_scaled, y_train,
+        validation_split=0.2,
+        epochs=50,
+        batch_size=8,
+        verbose=0
+    )
+    
+    histories[opt_name] = history
+    
+    # Résultats
+    val_acc = history.history['val_accuracy'][-1]
+    print(f"   Validation Accuracy finale: {val_acc:.4f}")
+
+# Comparaison visuelle
+plt.figure(figsize=(15, 5))
+
+plt.subplot(1, 2, 1)
+for opt_name, history in histories.items():
+    plt.plot(history.history['loss'], label=opt_name, linewidth=2)
+plt.xlabel('Epoch')
+plt.ylabel('Training Loss')
+plt.title('Comparaison des Optimiseurs - Loss')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+plt.subplot(1, 2, 2)
+for opt_name, history in histories.items():
+    plt.plot(history.history['val_accuracy'], label=opt_name, linewidth=2)
+plt.xlabel('Epoch')
+plt.ylabel('Validation Accuracy')
+plt.title('Comparaison des Optimiseurs - Accuracy')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+```
+
+## Dataset 2: Classification Multi-classes - MNIST
+
+###  Chargement et Préparation
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Chargement MNIST
+(X_train_mnist, y_train_mnist), (X_test_mnist, y_test_mnist) = keras.datasets.mnist.load_data()
+
+print(f"📊 Dataset MNIST:")
+print(f"Train: {X_train_mnist.shape}")
+print(f"Test: {X_test_mnist.shape}")
+
+# Prétraitement
+# Flatten 28x28 -> 784
+X_train_flat = X_train_mnist.reshape(-1, 28*28)
+X_test_flat = X_test_mnist.reshape(-1, 28*28)
+
+# Normalisation [0, 255] -> [0, 1]
+X_train_norm = X_train_flat / 255.0
+X_test_norm = X_test_flat / 255.0
+
+# One-hot encoding des labels
+y_train_cat = to_categorical(y_train_mnist, 10)
+y_test_cat = to_categorical(y_test_mnist, 10)
+
+print(f"\nAprès prétraitement:")
+print(f"X_train shape: {X_train_norm.shape}")
+print(f"y_train shape: {y_train_cat.shape}")
+
+# Visualisation de quelques exemples
+fig, axes = plt.subplots(2, 5, figsize=(12, 5))
+for i, ax in enumerate(axes.flat):
+    ax.imshow(X_train_mnist[i], cmap='gray')
+    ax.set_title(f"Label: {y_train_mnist[i]}")
+    ax.axis('off')
+plt.tight_layout()
+plt.show()
+```
+
+### Modèle Sans Régularisation
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Modèle sans régularisation
+model_no_reg = Sequential([
+    Dense(128, activation='relu', input_shape=(784,)),
+    Dense(64, activation='relu'),
+    Dense(10, activation='softmax')
+], name='No_Regularization')
+
+model_no_reg.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Entraînement
+history_no_reg = model_no_reg.fit(
+    X_train_norm, y_train_cat,
+    validation_split=0.2,
+    epochs=20,
+    batch_size=128,
+    verbose=1
+)
+
+# Évaluation
+test_loss, test_acc = model_no_reg.evaluate(X_test_norm, y_test_cat, verbose=0)
+print(f"\n📊 Test Accuracy (sans régularisation): {test_acc:.4f}")
+```
+
+### Modèle Avec Dropout
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Modèle avec Dropout
+model_dropout = Sequential([
+    Dense(128, activation='relu', input_shape=(784,)),
+    Dropout(0.3),  # 30% de dropout
+    Dense(64, activation='relu'),
+    Dropout(0.3),
+    Dense(10, activation='softmax')
+], name='With_Dropout')
+
+model_dropout.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Entraînement
+history_dropout = model_dropout.fit(
+    X_train_norm, y_train_cat,
+    validation_split=0.2,
+    epochs=20,
+    batch_size=128,
+    verbose=1
+)
+
+# Évaluation
+test_loss, test_acc = model_dropout.evaluate(X_test_norm, y_test_cat, verbose=0)
+print(f"\n📊 Test Accuracy (avec Dropout): {test_acc:.4f}")
+```
+
+### Modèle Avec Batch Normalization
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Modèle avec Batch Normalization
+model_bn = Sequential([
+    Dense(128, activation='relu', input_shape=(784,)),
+    BatchNormalization(),
+    Dense(64, activation='relu'),
+    BatchNormalization(),
+    Dense(10, activation='softmax')
+], name='With_BatchNorm')
+
+model_bn.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Entraînement
+history_bn = model_bn.fit(
+    X_train_norm, y_train_cat,
+    validation_split=0.2,
+    epochs=20,
+    batch_size=128,
+    verbose=1
+)
+
+# Évaluation
+test_loss, test_acc = model_bn.evaluate(X_test_norm, y_test_cat, verbose=0)
+print(f"\n📊 Test Accuracy (avec BatchNorm): {test_acc:.4f}")
+```
+
+### Modèle Complet (Dropout + BatchNorm)
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Modèle complet
+model_full = Sequential([
+    Dense(128, activation='relu', input_shape=(784,)),
+    BatchNormalization(),
+    Dropout(0.3),
+    Dense(64, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.3),
+    Dense(10, activation='softmax')
+], name='Full_Regularization')
+
+model_full.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Entraînement
+history_full = model_full.fit(
+    X_train_norm, y_train_cat,
+    validation_split=0.2,
+    epochs=20,
+    batch_size=128,
+    verbose=1
+)
+
+# Évaluation
+test_loss, test_acc = model_full.evaluate(X_test_norm, y_test_cat, verbose=0)
+print(f"\n📊 Test Accuracy (Dropout + BatchNorm): {test_acc:.4f}")
+```
+
+### Comparaison des Techniques de Régularisation
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Comparaison visuelle
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+models_histories = {
+    'Sans Régularisation': history_no_reg,
+    'Avec Dropout': history_dropout,
+    'Avec BatchNorm': history_bn,
+    'Dropout + BatchNorm': history_full
+}
+
+# Plot 1: Training Loss
+ax = axes[0, 0]
+for name, history in models_histories.items():
+    ax.plot(history.history['loss'], label=name, linewidth=2)
+ax.set_xlabel('Epoch')
+ax.set_ylabel('Training Loss')
+ax.set_title('Training Loss')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+# Plot 2: Validation Loss
+ax = axes[0, 1]
+for name, history in models_histories.items():
+    ax.plot(history.history['val_loss'], label=name, linewidth=2)
+ax.set_xlabel('Epoch')
+ax.set_ylabel('Validation Loss')
+ax.set_title('Validation Loss')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+# Plot 3: Training Accuracy
+ax = axes[1, 0]
+for name, history in models_histories.items():
+    ax.plot(history.history['accuracy'], label=name, linewidth=2)
+ax.set_xlabel('Epoch')
+ax.set_ylabel('Training Accuracy')
+ax.set_title('Training Accuracy')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+# Plot 4: Validation Accuracy
+ax = axes[1, 1]
+for name, history in models_histories.items():
+    ax.plot(history.history['val_accuracy'], label=name, linewidth=2)
+ax.set_xlabel('Epoch')
+ax.set_ylabel('Validation Accuracy')
+ax.set_title('Validation Accuracy')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.show()
+
+# Tableau récapitulatif
+results = []
+for name, history in models_histories.items():
+    final_val_acc = history.history['val_accuracy'][-1]
+    final_val_loss = history.history['val_loss'][-1]
+    overfitting = history.history['accuracy'][-1] - history.history['val_accuracy'][-1]
+    
+    results.append({
+        'Modèle': name,
+        'Val Accuracy': f"{final_val_acc:.4f}",
+        'Val Loss': f"{final_val_loss:.4f}",
+        'Overfitting': f"{overfitting:.4f}"
+    })
+
+df_results = pd.DataFrame(results)
+print("\n📊 Tableau Récapitulatif:")
+print(df_results.to_string(index=False))
+```
+
+## Early Stopping et Model Checkpointing
+
+```{python}
+#| echo: true
+#| eval: false
+
+# Callbacks pour améliorer l'entraînement
+early_stop = EarlyStopping(
+    monitor='val_loss',
+    patience=5,  # Arrête si pas d'amélioration pendant 5 epochs
+    restore_best_weights=True,
+    verbose=1
+)
+
+checkpoint = ModelCheckpoint(
+    'best_model.h5',
+    monitor='val_accuracy',
+    save_best_only=True,
+    verbose=1
+)
+
+# Modèle avec callbacks
+model_callbacks = Sequential([
+    Dense(128, activation='relu', input_shape=(784,)),
+    BatchNormalization(),
+    Dropout(0.3),
+    Dense(64, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.3),
+    Dense(10, activation='softmax')
+])
+
+model_callbacks.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# Entraînement avec callbacks
+history_callbacks = model_callbacks.fit(
+    X_train_norm, y_train_cat,
+    validation_split=0.2,
+    epochs=50,  # Beaucoup d'epochs, early stopping va arrêter
+    batch_size=128,
+    callbacks=[early_stop, checkpoint],
+    verbose=1
+)
+
+print(f"\n✅ Entraînement arrêté à l'epoch {len(history_callbacks.history['loss'])}")
+
+# Évaluation
+test_loss, test_acc = model_callbacks.evaluate(X_test_norm, y_test_cat, verbose=0)
+print(f"📊 Test Accuracy (avec callbacks): {test_acc:.4f}")
+```
+
+## Exercices Pratiques
+
+::: {.callout-warning icon=false}
+## Exercice 1: Optimisation d'Architecture
+
+Expérimentez avec différentes architectures sur MNIST:
+
+1. Testez 2, 3, 4 couches cachées
+2. Variez le nombre de neurones: [64, 128, 256, 512]
+3. Comparez les performances
+4. Quelle est la meilleure architecture?
+:::
+
+::: {.callout-note collapse="true"}
+## Correction Exercice 1
+
+```{python}
+#| echo: true
+#| eval: false
+
+print("=" * 70)
+print("EXERCICE 1: OPTIMISATION D'ARCHITECTURE")
+print("=" * 70)
+
+# Définition des architectures à tester
+architectures = {
+    '2 couches [128, 64]': [128, 64],
+    '2 couches [256, 128]': [256, 128],
+    '3 couches [256, 128, 64]': [256, 128, 64],
+    '3 couches [512, 256, 128]': [512, 256, 128],
+    '4 couches [512, 256, 128, 64]': [512, 256, 128, 64]
+}
+
+results_arch = []
+
+for arch_name, layers in architectures.items():
+    print(f"\n🔧 Test de l'architecture: {arch_name}")
+    
+    # Construction du modèle
+    model = Sequential(name=arch_name.replace(' ', '_'))
+    
+    # Couche d'entrée + premières couches cachées
+    model.add(Dense(layers[0], activation='relu', input_shape=(784,)))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.3))
+    
+    # Couches cachées supplémentaires
+    for neurons in layers[1:]:
+        model.add(Dense(neurons, activation='relu'))
+        model.add(BatchNormalization())
+        model.add(Dropout(0.3))
+    
+    # Couche de sortie
+    model.add(Dense(10, activation='softmax'))
+    
+    # Compilation
+    model.compile(
+        optimizer='adam',
+        loss='categorical_crossentropy',
+        metrics=['accuracy']
+    )
+    
+    # Entraînement
+    history = model.fit(
+        X_train_norm, y_train_cat,
+        validation_split=0.2,
+        epochs=15,
+        batch_size=128,
+        verbose=0
+    )
+    
+    # Évaluation
+    test_loss, test_acc = model.evaluate(X_test_norm, y_test_cat, verbose=0)
+    
+    # Nombre de paramètres
+    total_params = model.count_params()
+    
+    results_arch.append({
+        'Architecture': arch_name,
+        'Couches': len(layers),
+        'Paramètres': total_params,
+        'Val Accuracy': history.history['val_accuracy'][-1],
+        'Test Accuracy': test_acc,
+        'Overfitting': history.history['accuracy'][-1] - history.history['val_accuracy'][-1]
+    })
+    
+    print(f"   Paramètres: {total_params:,}")
+    print(f"   Test Accuracy: {test_acc:.4f}")
+
+# Affichage des résultats
+df_arch = pd.DataFrame(results_arch)
+df_arch = df_arch.sort_values('Test Accuracy', ascending=False)
+
+print("\n" + "=" * 70)
+print("RÉSULTATS COMPARATIFS")
+print("=" * 70)
+print(df_arch.to_string(index=False))
+
+# Meilleure architecture
+best_arch = df_arch.iloc[0]
+print(f"\n⭐ Meilleure architecture: {best_arch['Architecture']}")
+print(f"   Test Accuracy: {best_arch['Test Accuracy']:.4f}")
+print(f"   Paramètres: {best_arch['Paramètres']:,}")
+
+# Visualisation
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+
+# Accuracy vs Nombre de paramètres
+ax = axes[0]
+ax.scatter(df_arch['Paramètres'], df_arch['Test Accuracy'], s=100, alpha=0.6)
+for idx, row in df_arch.iterrows():
+    ax.annotate(row['Architecture'], 
+               (row['Paramètres'], row['Test Accuracy']),
+               fontsize=8, ha='right')
+ax.set_xlabel('Nombre de Paramètres')
+ax.set_ylabel('Test Accuracy')
+ax.set_title('Accuracy vs Complexité du Modèle')
+ax.grid(True, alpha=0.3)
+
+# Overfitting par architecture
+ax = axes[1]
+colors = ['green' if x < 0.05 else 'orange' if x < 0.10 else 'red' 
+          for x in df_arch['Overfitting']]
+ax.barh(range(len(df_arch)), df_arch['Overfitting'], color=colors, alpha=0.6)
+ax.set_yticks(range(len(df_arch)))
+ax.set_yticklabels(df_arch['Architecture'])
+ax.set_xlabel('Overfitting (Train - Val Accuracy)')
+ax.set_title('Degré d\'Overfitting par Architecture')
+ax.axvline(x=0.05, color='green', linestyle='--', alpha=0.5, label='Seuil acceptable')
+ax.axvline(x=0.10, color='orange', linestyle='--', alpha=0.5, label='Seuil critique')
+ax.legend()
+ax.grid(True, alpha=0.3, axis='x')
+
+plt.tight_layout()
+plt.show()
+
+print("\n💡 ANALYSE:")
+print("- Plus de couches ≠ toujours meilleure performance")
+print("- Compromis entre complexité et généralisation")
+print("- Surveiller l'overfitting (écart train-val)")
+print("- 3 couches [256, 128, 64] semble optimal pour MNIST")
+```
+:::
+
+::: {.callout-warning icon=false}
+## Exercice 2: Analyse des Erreurs
+
+1. Chargez le meilleur modèle
+2. Trouvez les 10 exemples les plus mal classés
+3. Visualisez ces exemples
+4. Analysez pourquoi le modèle se trompe
+:::
+
+::: {.callout-note collapse="true"}
+## Correction Exercice 2
+
+```{python}
+#| echo: true
+#| eval: false
+
+print("=" * 70)
+print("EXERCICE 2: ANALYSE DES ERREURS")
+print("=" * 70)
+
+# Utiliser le meilleur modèle (model_full)
+# Prédictions sur test set
+y_pred_proba = model_full.predict(X_test_norm)
+y_pred_classes = np.argmax(y_pred_proba, axis=1)
+y_true_classes = np.argmax(y_test_cat, axis=1)
+
+# 1. Identifier les erreurs
+errors_mask = y_pred_classes != y_true_classes
+errors_indices = np.where(errors_mask)[0]
+
+print(f"\n📊 Statistiques des erreurs:")
+print(f"Nombre total d'erreurs: {len(errors_indices)} / {len(y_test_cat)}")
+print(f"Taux d'erreur: {len(errors_indices)/len(y_test_cat)*100:.2f}%")
+
+# 2. Calculer la confiance des prédictions
+pred_confidence = np.max(y_pred_proba, axis=1)
+
+# Confiance pour les erreurs
+error_confidences = pred_confidence[errors_mask]
+error_true_labels = y_true_classes[errors_mask]
+error_pred_labels = y_pred_classes[errors_mask]
+
+# Créer un DataFrame des erreurs
+errors_df = pd.DataFrame({
+    'Index': errors_indices,
+    'Vrai Label': error_true_labels,
+    'Prédit': error_pred_labels,
+    'Confiance': error_confidences
+})
+
+# Trier par confiance décroissante (erreurs où le modèle était très confiant)
+errors_df = errors_df.sort_values('Confiance', ascending=False)
+
+print(f"\n🔴 Top 10 erreurs (modèle le plus confiant):")
+print(errors_df.head(10).to_string(index=False))
+
+# 3. Visualiser les 10 pires erreurs
+worst_errors_indices = errors_df.head(10)['Index'].values
+
+fig, axes = plt.subplots(2, 5, figsize=(15, 6))
+for i, (ax, idx) in enumerate(zip(axes.flat, worst_errors_indices)):
+    # Récupérer l'image
+    img = X_test_mnist[idx]
+    true_label = y_true_classes[idx]
+    pred_label = y_pred_classes[idx]
+    confidence = pred_confidence[idx]
+    
+    # Afficher
+    ax.imshow(img, cmap='gray')
+    ax.set_title(f"Vrai: {true_label} | Prédit: {pred_label}\n"
+                f"Confiance: {confidence:.1%}",
+                color='red', fontsize=10)
+    ax.axis('off')
+
+plt.suptitle('Top 10 Erreurs du Modèle (Haute Confiance)', 
+            fontsize=14, fontweight='bold')
+plt.tight_layout()
+plt.show()
+
+# 4. Analyse des patterns d'erreurs
+print(f"\n📈 ANALYSE DES PATTERNS D'ERREURS:")
+
+# Matrice de confusion des erreurs
+confusion_errors = confusion_matrix(error_true_labels, error_pred_labels)
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(confusion_errors, annot=True, fmt='d', cmap='Reds',
+            xticklabels=range(10), yticklabels=range(10))
+plt.xlabel('Classe Prédite')
+plt.ylabel('Vraie Classe')
+plt.title('Matrice de Confusion des Erreurs')
+plt.tight_layout()
+plt.show()
+
+# Paires de confusion les plus fréquentes
+confusion_pairs = []
+for i in range(10):
+    for j in range(10):
+        if i != j and confusion_errors[i, j] > 0:
+            confusion_pairs.append({
+                'Vrai': i,
+                'Prédit': j,
+                'Nombre': confusion_errors[i, j]
+            })
+
+confusion_pairs_df = pd.DataFrame(confusion_pairs)
+confusion_pairs_df = confusion_pairs_df.sort_values('Nombre', ascending=False)
+
+print(f"\nPaires de confusion les plus fréquentes:")
+print(confusion_pairs_df.head(10).to_string(index=False))
+
+# Distribution de la confiance pour erreurs vs succès
+correct_mask = ~errors_mask
+correct_confidences = pred_confidence[correct_mask]
+
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.hist(error_confidences, bins=30, alpha=0.7, label='Erreurs', color='red')
+plt.hist(correct_confidences, bins=30, alpha=0.7, label='Correct', color='green')
+plt.xlabel('Confiance de la Prédiction')
+plt.ylabel('Fréquence')
+plt.title('Distribution de la Confiance')
+plt.legend()
+plt.grid(True, alpha=0.3)
+
+plt.subplot(1, 2, 2)
+plt.boxplot([correct_confidences, error_confidences],
+           labels=['Prédictions Correctes', 'Erreurs'])
+plt.ylabel('Confiance')
+plt.title('Boxplot de la Confiance')
+plt.grid(True, alpha=0.3, axis='y')
+
+plt.tight_layout()
+plt.show()
+
+print(f"\n💡 CONCLUSIONS:")
+print(f"1. Confiance moyenne (correct): {correct_confidences.mean():.1%}")
+print(f"2. Confiance moyenne (erreurs): {error_confidences.mean():.1%}")
+print(f"3. Paires confuses: {confusion_pairs_df.iloc[0]['Vrai']} ↔ {confusion_pairs_df.iloc[0]['Prédit']}")
+print(f"4. Le modèle est parfois très confiant même quand il se trompe!")
+print(f"5. Les chiffres visuellement similaires sont souvent confondus")
+```
+:::
+
+## Résumé du TP
+
+::: {.callout-important icon=false}
+## Ce que vous avez appris
+
+1. **Construction de réseaux** avec Keras Sequential API
+2. **Choix des activations**: ReLU (cachées), Sigmoid/Softmax (sortie)
+3. **Optimiseurs**: SGD, Adam et leurs effets
+4. **Régularisation**: Dropout et BatchNormalization
+5. **Callbacks**: EarlyStopping et ModelCheckpoint
+6. **Visualisation**: Courbes d'apprentissage
+7. **Analyse**: Matrice de confusion et erreurs du modèle
+:::
+
+## Checklist de Validation
+
+- [ ] Modèle construit et compilé sans erreur
+- [ ] Entraînement effectué avec visualisation
+- [ ] Évaluation sur test set > 90% accuracy (MNIST)
+- [ ] Comparaison de plusieurs optimiseurs
+- [ ] Application de techniques de régularisation
+- [ ] Utilisation de callbacks (Early Stopping)
+- [ ] Analyse des erreurs du modèle
+
+## Pour Aller Plus Loin
+
+1. Testez sur Fashion-MNIST (vêtements au lieu de chiffres)
+2. Implémentez une validation croisée
+3. Utilisez l'API Functional de Keras (plus flexible)
+4. Expérimentez avec des learning rate schedules
+5. Essayez différentes initialisations de poids
+
+## Ressources
+
+1. [Keras Documentation](https://keras.io/)
+2. [TensorFlow Tutorials](https://www.tensorflow.org/tutorials)
+3. [Deep Learning with Python - François Chollet](https://www.manning.com/books/deep-learning-with-python)
+4. [CS231n - Training Neural Networks](http://cs231n.github.io/neural-networks-3/)

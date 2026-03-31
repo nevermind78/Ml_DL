@@ -28,8 +28,10 @@ book:
         - seance8.qmd
         - seance9.qmd
         - seance10.qmd
-    # Configuration multilingue
-    
+    - part: "Partie 2: Deep Learning"
+      chapters:
+        - seance11.qmd
+        - seance12.qmd
 
 format:
   html:
