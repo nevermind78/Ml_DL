@@ -3,7 +3,7 @@
 
 ---
 
-## Informations Générales
+## Informations Générales :
 
 | Intitulé | Machine Learning et Deep Learning |
 |----------|-----------------------------------|

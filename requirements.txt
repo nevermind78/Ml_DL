@@ -8,3 +8,5 @@ seaborn
 scipy
 plotly
 nbformat
+nbclient
+pyyaml
