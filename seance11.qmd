@@ -144,6 +144,7 @@ Un **neurone artificiel** est l'unité de base d'un réseau de neurones.
 2. **Activation**: $y = f(z)$
 
 Où:
+
 - $x_i$ = entrées (features)
 - $w_i$ = poids (weights)
 - $b$ = biais (bias)
@@ -284,6 +285,7 @@ Un réseau de neurones est composé de **plusieurs couches** de neurones:
 ```
 
 **Terminologie**:
+
 - **Dense/Fully Connected**: Chaque neurone connecté à tous les neurones de la couche suivante
 - **Profondeur**: Nombre de couches cachées
 - **Largeur**: Nombre de neurones par couche
@@ -297,6 +299,7 @@ Les **fonctions d'activation** introduisent de la **non-linéarité** dans le r�
 $$\sigma(x) = \frac{1}{1 + e^{-x}}$$
 
 **Caractéristiques**:
+
 - Sortie dans [0, 1]
 - Interprétable comme probabilité
 - **Problème**: Vanishing gradient
@@ -330,6 +333,7 @@ plt.show()
 $$\tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}$$
 
 **Caractéristiques**:
+
 - Sortie dans [-1, 1]
 - Centrée autour de 0
 - Meilleure que sigmoid pour couches cachées
@@ -339,6 +343,7 @@ $$\tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}$$
 $$\text{ReLU}(x) = \max(0, x)$$
 
 **Caractéristiques**:
+
 - **La plus utilisée** pour couches cachées
 - Simple et efficace
 - Résout le problème de vanishing gradient
@@ -394,6 +399,7 @@ plt.show()
 $$\text{softmax}(x_i) = \frac{e^{x_i}}{\sum_{j} e^{x_j}}$$
 
 **Caractéristiques**:
+
 - Utilisée en **couche de sortie** pour classification
 - Produit une distribution de probabilité
 - Somme des sorties = 1
@@ -476,6 +482,7 @@ L'**optimisation** consiste à ajuster les poids pour minimiser la fonction de c
 $$w_{new} = w_{old} - \alpha \frac{\partial L}{\partial w}$$
 
 Où:
+
 - $\alpha$ = learning rate (taux d'apprentissage)
 - $\frac{\partial L}{\partial w}$ = gradient de la loss par rapport aux poids
 
@@ -500,14 +507,17 @@ print(f"Nouveaux poids: {new_weights}")
 ### Variants de Gradient Descent
 
 **1. Batch Gradient Descent**
+
 - Utilise **tout le dataset** pour calculer le gradient
 - Lent mais stable
 
 **2. Stochastic Gradient Descent (SGD)**
+
 - Utilise **un seul exemple** à la fois
 - Rapide mais instable
 
 **3. Mini-Batch Gradient Descent**
+
 - Utilise **un petit batch** (ex: 32, 64, 128 exemples)
 - **Compromis idéal**: rapide et stable
 - **Le plus utilisé en pratique**
@@ -515,10 +525,12 @@ print(f"Nouveaux poids: {new_weights}")
 ### Optimiseurs Avancés
 
 **SGD avec Momentum**
+
 - Accumule la vitesse des mises à jour
 - Aide à traverser les plateaux
 
 **Adam (Adaptive Moment Estimation)**
+
 - **Le plus populaire**
 - Adapte le learning rate pour chaque paramètre
 - Combine momentum et RMSprop
@@ -701,11 +713,13 @@ Ces valeurs sont **optimisées automatiquement** pendant l'entraînement.
 ### Hyperparamètres (choisis par le data scientist)
 
 **Architecture**:
+
 - Nombre de couches
 - Nombre de neurones par couche
 - Fonction d'activation
 
 **Entraînement**:
+
 - Learning rate
 - Batch size
 - Nombre d'epochs
@@ -777,6 +791,7 @@ print(f"Avec dropout (50%): {x_dropout}")
 ```
 
 **Avantages**:
+
 - Force le réseau à apprendre des représentations robustes
 - Effet d'ensemble (comme Random Forest)
 - Très efficace contre overfitting
@@ -788,6 +803,7 @@ print(f"Avec dropout (50%): {x_dropout}")
 $$\text{BN}(x) = \gamma \frac{x - \mu}{\sqrt{\sigma^2 + \epsilon}} + \beta$$
 
 **Avantages**:
+
 - Accélère l'entraînement
 - Permet des learning rates plus élevés
 - Effet régularisant
@@ -835,6 +851,7 @@ $$L_{total} = L_{original} + \lambda \sum w^2$$
 $$L_{total} = L_{original} + \lambda \sum |w|$$
 
 **Effet**:
+
 - Pénalise les poids élevés
 - Force le modèle à rester simple
 - L1 peut mettre des poids à 0 (sélection de features)
@@ -948,6 +965,7 @@ e) Prédiction de probabilités multiples indépendantes
 ## Correction Exercice 2
 
 **a) Classification binaire - Couche de sortie:**
+
 - **Fonction**: **Sigmoid**
 - **Justification**:
   - Sortie dans [0, 1] → interprétable comme probabilité
@@ -974,8 +992,10 @@ model.compile(
 ```
 
 **b) Régression - Couche de sortie:**
+
 - **Fonction**: **Aucune (linéaire)** ou **ReLU** si valeurs positives
 - **Justification**:
+  
   - Besoin de valeurs continues sans contrainte
   - Pas d'activation = sortie linéaire
   - ReLU si prix toujours positifs
@@ -1007,8 +1027,10 @@ model.compile(
 ```
 
 **c) Classification 10 classes - Couche de sortie:**
+
 - **Fonction**: **Softmax**
 - **Justification**:
+  
   - 10 neurones (un par classe)
   - Softmax produit distribution de probabilité
   - Somme des probabilités = 1
@@ -1038,8 +1060,10 @@ model.compile(
 ```
 
 **d) Couches cachées:**
+
 - **Fonction**: **ReLU** (ou variants: Leaky ReLU, ELU)
 - **Justification**:
+  
   - Standard moderne pour couches cachées
   - Calcul rapide
   - Évite vanishing gradient
