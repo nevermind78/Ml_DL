@@ -1162,6 +1162,7 @@ model.compile(
 ## Préparation pour le TP
 
 Pour le prochain TP, vous devrez:
+
 1. Installer TensorFlow/Keras
 2. Comprendre la structure d'un réseau de neurones
 3. Savoir choisir les fonctions d'activation appropriées
