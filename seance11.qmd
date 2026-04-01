@@ -845,6 +845,7 @@ $$L_{total} = L_{original} + \lambda \sum |w|$$
 ## Exercice 1: Calcul Forward Pass
 
 Soit un réseau avec:
+
 - Input: x = [2, 3]
 - Poids couche 1: W1 = [[0.5, -0.3], [0.2, 0.8]]
 - Biais couche 1: b1 = [0.1, -0.1]
