@@ -153,6 +153,7 @@ execute:
   cache: false
   freeze: auto
 
+
 language:
   title-block-author: "Enseignants"
   title-block-published: "Derniere mise a jour"
