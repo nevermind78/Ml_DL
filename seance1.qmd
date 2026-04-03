@@ -7,7 +7,7 @@
 - **Objectifs**: Obj1, Obj2, Obj3
 :::
 
-## 1. Définitions et Concepts de Base
+## 1. Définition et Concepts de Base
 
 ### 1.1 Intelligence Artificielle (IA)
 
